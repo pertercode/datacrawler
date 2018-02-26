@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="dao.BaseMapper">
+
+    <resultMap id="Category" type="bean.Category">
+        <id property="_id" column="_id" />
+        <result property="c_id" column="c_id" />
+        <result property="c_name" column="c_name" />
+        <result property="c_level" column="c_level" />
+        <result property="c_islow" column="c_islow" />
+        <result property="c_parent" column="c_parent" />
+    </resultMap>
+    
+    <select id="categoryCount" resultType="integer">
+        SELECT COUNT(_ID) FROM `lz_crawler`.`crawler_category` WHERE c_name = #{cname}
+    </select>
+
+    <insert id="categoryInsert" parameterType="bean.Category">
+        INSERT INTO `lz_crawler`.`crawler_category` (`_id`, `c_id`, `c_name`, `c_level`, `c_islow`, `c_parent`)
+        VALUES (#{category._id}, #{category.c_id}, #{category.c_name}, #{category.c_level}, #{category.c_islow}, #{category.c_parent});
+    </insert>
+
+    <!--ORDER BY c_level DESC LIMIT 0 , 1-->
+    <select id="categorySelect" resultMap="Category">
+        SELECT * FROM `lz_crawler`.`crawler_category` WHERE c_name = #{cname}
+
+
+    </select>
+
+
+    <insert id="companyReplace" parameterType="CompanyInfo">
+        REPLACE INTO `lz_crawler`.`crawler_company` (`_id`, `cid`, `cName`, `cConcat`, `cMobile`, `cPhone`, `cQq`, `cAddress`)
+        VALUES (#{companyInfo._id}, #{companyInfo.cId}, #{companyInfo.cName}, #{companyInfo.cConcat}, #{companyInfo.cMobile}, #{companyInfo.cPhone}, #{companyInfo.cQq}, #{companyInfo.cAddress});
+    </insert>
+
+    <insert id="produceReplace" parameterType="ProduceInfo">
+        REPLACE INTO `lz_crawler`.`crawler_produce` (`_id`, `p_page`, `pid`, `pname`, `pprice`, `pimgsrc`, `pimglocal`, `p_category`, `pcompanyId`)
+        VALUES (#{produceInfo._id}, #{produceInfo.page}, #{produceInfo.pId}, #{produceInfo.pName}, #{produceInfo.price}, #{produceInfo.imgSrc}, #{produceInfo.imgLocal}, #{produceInfo.category._id}, #{produceInfo.companyInfo._id});
+    </insert>
+</mapper>

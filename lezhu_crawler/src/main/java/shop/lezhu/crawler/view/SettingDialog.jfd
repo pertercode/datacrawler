@@ -1,0 +1,222 @@
+JFDML JFormDesigner: "6.0.2.0.116" Java: "1.8.0_152-release" encoding: "UTF-8"
+
+new FormModel {
+	contentType: "form/swing"
+	root: new FormRoot {
+		add( new FormWindow( "javax.swing.JDialog", new FormLayoutManager( class com.jformdesigner.runtime.NullLayout ) {
+			"autoSize": false
+		} ) {
+			name: "this"
+			"font": new com.jformdesigner.model.SwingDerivedFont( null, 65536, 0, false )
+			"title": "设置"
+			"$locationPolicy": 1
+			"name": "dialog"
+			"resizable": false
+			"alwaysOnTop": true
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "btnOk"
+				"text": "确定"
+				"font": new java.awt.Font( "微软雅黑", 0, 14 )
+				auxiliary() {
+					"JavaCodeGenerator.variableModifiers": 1
+				}
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+				"x": 345
+				"y": 420
+				"width": 95
+				"height": 45
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "btnCancle"
+				"text": "取消"
+				"font": new java.awt.Font( "微软雅黑", 0, 14 )
+				auxiliary() {
+					"JavaCodeGenerator.variableModifiers": 1
+				}
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+				"x": 470
+				"y": 420
+				"width": 90
+				"height": 45
+			} )
+			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class com.jformdesigner.runtime.NullLayout ) ) {
+				name: "pelSetting"
+				auxiliary() {
+					"JavaCodeGenerator.variableModifiers": 1
+				}
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label1"
+					"text": "模式"
+					"font": &Font0 new java.awt.Font( "微软雅黑", 0, 18 )
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"x": 24
+					"y": 10
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label2"
+					"text": "短信API_KEY"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 111
+					"height": 24
+					"x": 24
+					"y": 94
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label3"
+					"text": "短信模板"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 101
+					"height": 24
+					"x": 24
+					"y": 146
+				} )
+				add( new FormComponent( "javax.swing.JTextField" ) {
+					name: "txtApiKey"
+					"text": "阿斯顿撒"
+					"font": &Font1 new java.awt.Font( "微软雅黑", 0, 14 )
+					auxiliary() {
+						"JavaCodeGenerator.variableModifiers": 1
+						"JavaCodeGenerator.variableName": "txtApiKey"
+					}
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"x": 150
+					"y": 92
+					"width": 410
+				} )
+				add( new FormComponent( "javax.swing.JComboBox" ) {
+					name: "comboBox1"
+					"font": new java.awt.Font( "微软雅黑", 1, 18 )
+					"foreground": sfield java.awt.Color darkGray
+					"model": new javax.swing.DefaultComboBoxModel {
+						selectedItem: "debug"
+						addElement( "debug" )
+						addElement( "release" )
+					}
+					"maximumRowCount": 2
+					auxiliary() {
+						"JavaCodeGenerator.variableModifiers": 1
+						"JavaCodeGenerator.variableName": "cbMode"
+					}
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"x": 150
+					"y": 6
+					"width": 160
+				} )
+				add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+					name: "scrollPane1"
+					add( new FormComponent( "javax.swing.JTextArea" ) {
+						name: "textArea1"
+						"font": new java.awt.Font( "微软雅黑", 0, 14 )
+						auxiliary() {
+							"JavaCodeGenerator.variableModifiers": 1
+							"JavaCodeGenerator.variableName": "txtTpl"
+						}
+					} )
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"x": 150
+					"y": 152
+					"width": 410
+					"height": 155
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label4"
+					"text": " #ContactsName# ： 联系人名称 （如 张三、李四）"
+					"font": &Font2 new java.awt.Font( "微软雅黑", 0, 12 )
+					"foreground": sfield java.awt.Color blue
+					"horizontalAlignment": 2
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 445
+					"height": 18
+					"x": 115
+					"y": 316
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label5"
+					"text": "#key# 或 #goods#： 关键词 （如 水泥、黄沙）"
+					"font": #Font2
+					"foreground": sfield java.awt.Color blue
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 445
+					"height": 18
+					"x": 115
+					"y": 334
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label6"
+					"text": "#duty#： 职位 （如总经理、董事长）"
+					"font": #Font2
+					"foreground": sfield java.awt.Color blue
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 445
+					"height": 18
+					"x": 115
+					"y": 352
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label7"
+					"text": "#male#： 先生OR女士(有的人不填）"
+					"font": #Font2
+					"foreground": sfield java.awt.Color blue
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 445
+					"height": 18
+					"x": 115
+					"y": 370
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label8"
+					"text": "#areaName#： 经营范围（钢筋、水泥、有的人不填）"
+					"font": #Font2
+					"foreground": sfield java.awt.Color blue
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 445
+					"height": 18
+					"x": 115
+					"y": 388
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "label9"
+					"text": "短信API_KEY"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 111
+					"height": 24
+					"x": 0
+					"y": 411
+				} )
+				add( new FormComponent( "javax.swing.JLabel" ) {
+					name: "lbUrl"
+					"text": "API_URL"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 111
+					"height": 24
+					"x": 24
+					"y": 53
+				} )
+				add( new FormComponent( "javax.swing.JTextField" ) {
+					name: "txtApiUrl"
+					"font": #Font1
+					auxiliary() {
+						"JavaCodeGenerator.variableModifiers": 1
+					}
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+					"width": 410
+					"height": 27
+					"x": 150
+					"y": 50
+				} )
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.NullConstraints ) {
+				"x": 0
+				"y": 0
+				"height": 410
+				"width": 580
+			} )
+		}, new FormLayoutConstraints( null ) {
+			"location": new java.awt.Point( 0, 0 )
+			"size": new java.awt.Dimension( 595, 510 )
+		} )
+	}
+}
