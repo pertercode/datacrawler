@@ -1,7 +1,5 @@
 package http;
 
-import sun.plugin2.os.windows.Windows;
-
 public class HttpHeaderUtils {
 
     public static final String[] USER_AGENT_ARR = {

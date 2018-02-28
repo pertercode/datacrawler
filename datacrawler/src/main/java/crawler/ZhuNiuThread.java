@@ -77,7 +77,7 @@ public class ZhuNiuThread implements Runnable {
                         // 存储产品信息
                         baseService.produceReplace(produceInfo);
 
-                        log.debug("[page = " + produceInfo.getPage() + "] 产品入库 ： " + produceInfo.getpName() + "  ,  企业入库： " + produceInfo.getCompanyInfo().getcName() + " ,  类型入库 ： " + produceInfo.getCompanyInfo().category);
+                        log.info("[page = " + produceInfo.getPage() + "] 产品入库 ： " + produceInfo.getpName() + "  ,  企业入库： " + produceInfo.getCompanyInfo().getcName() + " ,  类型入库 ： " + produceInfo.getCompanyInfo().category);
 
                     } else {
                         log.error("ERROR： requestCompanyInfo 方法返回的 CompanyInfo对象是空 ， 查询URL = " + url + " ， 相关参数 =  " + new Gson().toJson(produceInfo));

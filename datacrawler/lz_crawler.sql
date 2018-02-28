@@ -61,20 +61,3 @@ CREATE TABLE `crawler_produce` (
   `pcompanyId` varchar(255) DEFAULT '' COMMENT '企业ID',
   PRIMARY KEY (`_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for crawler_produce_copy
--- ----------------------------
-DROP TABLE IF EXISTS `crawler_produce_copy`;
-CREATE TABLE `crawler_produce_copy` (
-  `_id` varchar(200) NOT NULL COMMENT '数据ID',
-  `p_page` int(7) NOT NULL COMMENT '所属Page',
-  `pid` varchar(200) DEFAULT '' COMMENT '商品ID',
-  `pname` varchar(255) NOT NULL DEFAULT '' COMMENT '商品名',
-  `pprice` varchar(100) DEFAULT '' COMMENT '价格',
-  `pimgsrc` varchar(255) DEFAULT '' COMMENT '源图片地址',
-  `pimglocal` varchar(255) DEFAULT '' COMMENT '本地图片路径',
-  `p_category` varchar(255) NOT NULL DEFAULT '' COMMENT '商品所属分类ID',
-  `pcompanyId` varchar(255) DEFAULT '' COMMENT '企业ID',
-  PRIMARY KEY (`_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;

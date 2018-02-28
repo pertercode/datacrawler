@@ -289,7 +289,7 @@ public class ZNBaseService {
             int endLength = arr.length;
 
             if (sourceLength != endLength) {
-                log.debug("Category 重复,但已经去重, 原来类型： " + categoryStr + " , 去重复后： " + new Gson().toJson(categoryList));
+                log.info("Category 重复,但已经去重, 原来类型： " + categoryStr + " , 去重复后： " + new Gson().toJson(categoryList));
             }
 
             // 判断类别是否存在于数据库

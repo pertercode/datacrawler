@@ -2,8 +2,14 @@ group 'shop.lezhu'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'idea'
 
 sourceCompatibility = 1.8
+
+//编译JAVA文件时采用UTF-8
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
 
 repositories {
     mavenCentral()
@@ -25,4 +31,28 @@ dependencies {
 
 //    compile 'com.yunpian.sdk:yunpian-java-sdk:1.2.6'
 
+}
+
+jar {
+    String someString = ''
+    configurations.runtime.each {someString = someString + " lib/"+it.name}
+    baseName 'lezhu_crawler'
+    
+    manifest {
+        attributes 'Main-Class': 'App'
+        attributes 'Class-Path': someString
+    }
+}
+//清除上次的编译过的文件
+task clearPj(type:Delete){
+    delete 'build','target'
+}
+task copyJar(type:Copy){
+    from configurations.runtime
+    into ('build/libs/lib')
+}
+//把JAR复制到目标目录
+task release(type: Copy,dependsOn: [build,copyJar]) {
+// from 'conf'
+// into ('build/libs/eachend/conf') // 目标位置
 }
