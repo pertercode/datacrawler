@@ -3,15 +3,19 @@ package crawler;
 import bean.Category;
 import bean.CompanyInfo;
 import bean.ProduceInfo;
+import cache.CompanyCache;
 import com.google.gson.Gson;
 import services.ZNBaseService;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * 筑牛网抓取程序
  */
 public class ZhuNiuThread implements Runnable {
+
+    private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(ZhuNiuThread.class);
 
     private ZNBaseService baseService = new ZNBaseService();
 
@@ -23,6 +27,13 @@ public class ZhuNiuThread implements Runnable {
         int currentPage = 1;
 
         // 从数据库里查询最大页数 - 5 为当前页
+        int dbMaxPage = baseService.produceMaxPage();
+
+        currentPage = dbMaxPage - 2;
+
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
 
         do {
             List<ProduceInfo> produceInfos = baseService.requestAllProduce(currentPage);
@@ -55,10 +66,9 @@ public class ZhuNiuThread implements Runnable {
                         Category category = baseService.requestCategory(companyInfo.category);
 
                         if (category == null) {
-                            System.err.println("类别 Category is NULL !" + " , " + new Gson().toJson(companyInfo));
+                            log.error("ERROR： requestCategory 方法返回的 Category ， CategoryStr = “" + companyInfo.category + "” ， 查询URL = " + url + " ， 相关参数 =  " + new Gson().toJson(produceInfo));
                         }
                         produceInfo.setCategory(category);
-
 
                         // 设置企业信息
                         baseService.companyReplace(companyInfo);
@@ -67,32 +77,28 @@ public class ZhuNiuThread implements Runnable {
                         // 存储产品信息
                         baseService.produceReplace(produceInfo);
 
-                        System.out.println("[page = " + produceInfo.getPage() + "] 产品入库 ： " + produceInfo.getpName() + "  ,  企业入库： " + produceInfo.getCompanyInfo().getcName() + " ,  类型入库 ： " + produceInfo.getCompanyInfo().category);
-
+                        log.debug("[page = " + produceInfo.getPage() + "] 产品入库 ： " + produceInfo.getpName() + "  ,  企业入库： " + produceInfo.getCompanyInfo().getcName() + " ,  类型入库 ： " + produceInfo.getCompanyInfo().category);
 
                     } else {
-                        System.err.println("ERROR:  url =  " + url + " ,  requestCompanyInfo 返回得 companyInfo 对象 是 NULL!");
-                        i--;
+                        log.error("ERROR： requestCompanyInfo 方法返回的 CompanyInfo对象是空 ， 查询URL = " + url + " ， 相关参数 =  " + new Gson().toJson(produceInfo));
                     }
 
-                    // 休眠
-                    try {
-                        Thread.sleep(1100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-//                    client.setProxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(hostname, port)));
+//                    // 休眠
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
 
                 }
 
                 currentPage++;
 
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
             }
 
         } while (currentPage <= maxPage);

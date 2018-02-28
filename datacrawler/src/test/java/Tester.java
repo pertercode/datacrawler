@@ -1,42 +1,13 @@
+import http.HttpUtils;
 import http.IpUtils;
-import okhttp3.Call;
 import okhttp3.Request;
-import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.util.logging.Logger;
 
 public class Tester {
 
-    @Test
-    public void testJdbc() {
-        try {
-            SqlSessionFactory factory = new SqlSessionFactoryBuilder().build(Resources.getResourceAsReader("mybatis-config.xml"));
 
-            SqlSession session = factory.openSession();
-
-            System.out.println(session.getConnection());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    @Test
-    public void testZhuNiu() {
-
-
-    }
-
-
-    @Test
-    public void testrequestCompanyInfo() {
-        System.out.println(IpUtils.getRandomIp());
-    }
 
     public static String decodeUnicode(final String dataStr) {
         int start = 0;
@@ -57,5 +28,11 @@ public class Tester {
         return buffer.toString();
     }
 
+
+    @Test
+    public void testLog() {
+        org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(Tester.class);
+        logger.error("1" ,new RuntimeException("1"));
+    }
 
 }

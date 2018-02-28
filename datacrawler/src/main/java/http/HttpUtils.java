@@ -3,20 +3,21 @@ package http;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.net.Proxy;
 import java.util.concurrent.TimeUnit;
 
 public class HttpUtils {
 
     // 重试次数
-    public static final int retry_count = 3;
+    public static final int retry_count = 16;
 
     // 重试间隔,单位为秒
     public static final int retry_time = 1;
 
 
     // 超时时间，单位为秒
-    public static final int connection_time = 3;
-    public static final int reader_time = 5;
+    public static final int connection_time = 8;
+    public static final int reader_time = 10;
 
     private static okhttp3.OkHttpClient mOkHttpClient = null;
 
@@ -26,10 +27,22 @@ public class HttpUtils {
             mOkHttpClient = new okhttp3.OkHttpClient.Builder()
                     .connectTimeout(connection_time, TimeUnit.SECONDS)
                     .readTimeout(reader_time, TimeUnit.SECONDS)
+                    .proxy(ProxyUtils.getProxy())
+                    .proxyAuthenticator(ProxyUtils.getProxyAuthenticator())
                     .build();
         }
         return mOkHttpClient;
     }
+
+
+//    public static synchronized void setProxy() {
+//        Proxy proxy = ProxyUtils.getProxy();
+//        if (proxy != null) {
+//            mOkHttpClient = mOkHttpClient.newBuilder().proxy(proxy).build();
+//        } else {
+//            System.err.println("设置代理失败, ProxyUtils.getProxy() 返回 NULL! ");
+//        }
+//    }
 
 
     /**
@@ -39,8 +52,8 @@ public class HttpUtils {
      */
     public static synchronized Headers getCommonHeaders() {
         Headers.Builder builder = new Headers.Builder();
+        builder.add("Accept", "*/*");
         builder.add("User-Agent", HttpHeaderUtils.getNextUserAgent());
-        builder.add("X-Forwarded-For", IpUtils.getRandomIp());
         return builder.build();
     }
 
@@ -92,31 +105,38 @@ public class HttpUtils {
      * @param request
      * @return
      */
-    public static synchronized ResponseWrap retryHttpAutoProxy(Request request) {
-        ResponseWrap responseWrap = null;
-        for (int i = 0; i < retry_count + 1; i++) {
-            responseWrap = retryHttp(request);
-            if (responseWrap.isSuccess()) return responseWrap;
-
-            if (responseWrap.e instanceof IOException) {
-                // 切换IP 然后重试
-                try {
-                    AdslUtils.conn();
-                    AdslUtils.stop();
-                    AdslUtils.conn();
-
-                    if (retry_time > 0) {
-                        try {
-                            Thread.sleep(retry_time * 1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return responseWrap;
-    }
+//    public static synchronized ResponseWrap retryHttpAutoProxy(Request request) {
+//        ResponseWrap responseWrap = null;
+//        for (int i = 0; i < retry_count + 1; i++) {
+//            responseWrap = retryHttp(request);
+//            if (responseWrap.isSuccess()) return responseWrap;
+//
+//            if (responseWrap.e instanceof IOException) {
+//
+//                phpSession = "";
+//
+//                // 切换IP 然后重试
+//                try {
+//                    AdslUtils.conn();
+//                    AdslUtils.stop();
+//                    AdslUtils.conn();
+//
+////                    System.out.println("切换代理中....");
+////
+////                    setProxy();
+//
+//                    if (retry_time > 0) {
+//                        try {
+//                            Thread.sleep(retry_time * 1000);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//        return responseWrap;
+//    }
 }

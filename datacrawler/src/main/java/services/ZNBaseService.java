@@ -7,14 +7,18 @@ import com.google.gson.Gson;
 import dao.BaseMapper;
 import dao.MyBatisUtils;
 import http.HttpUtils;
+import okhttp3.Headers;
 import okhttp3.Request;
+import okhttp3.internal.http2.Header;
 import org.apache.ibatis.session.SqlSession;
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import utils.IDUtils;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,10 +27,56 @@ import java.util.List;
  */
 public class ZNBaseService {
 
+    private static final Logger log = Logger.getLogger(ZNBaseService.class);
+
     private static final String BASE_URL = "http://www.zhuniu.com/";
 
     private static final String platform = "zhuniu";
 
+    public static String phpSession = "";
+
+//    /**
+//     * 保存Cookie
+//     *
+//     * @return
+//     */
+//    public Header getCookie() {
+//        Header header = null;
+//        String val = (System.currentTimeMillis() / 1000) + "";
+//
+//        if (phpSession.trim().length() > 0) {
+//            header = new Header("Cookie", "PHPSESSID=" + phpSession + "; Hm_lvt_28f83144ccb9b9784df395859259ef55=" + val + "; Hm_lpvt_28f83144ccb9b9784df395859259ef55=" + val);
+//            return header;
+//        }
+//
+//        String url = BASE_URL + "api/ajax_check_login_2016_type_2?random=" + System.currentTimeMillis();
+//
+//        try {
+//            final Request request = new Request.Builder()
+//                    .headers(HttpUtils.getCommonHeaders())
+//                    .header("Referer", BASE_URL)
+//                    .header("X-Requested-With", "XMLHttpRequest")
+//                    .url(url)
+//                    .build();
+//
+//            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
+//
+//            if (responseWrap.isSuccess()) {
+//                String setCookie = responseWrap.response.header("Set-Cookie");
+//                int index = setCookie.indexOf('=') + 1;
+//                int endIndex = setCookie.indexOf(';');
+//                phpSession = setCookie.substring(index, endIndex);
+//
+//                header = new Header("Cookie", "PHPSESSID=" + phpSession + "; Hm_lvt_28f83144ccb9b9784df395859259ef55=" + val + "; Hm_lpvt_28f83144ccb9b9784df395859259ef55=" + val);
+//
+//                System.out.println("Cookie 已经重置 , Cookie = " + header.value.string(Charset.forName("UTF-8")));
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//        return header;
+//    }
 
     /**
      * 查询所有商品
@@ -41,13 +91,23 @@ public class ZNBaseService {
 
         String url = BASE_URL + "market/product_lists/p/" + page;
 
+//        Header cookie = getCookie();
+//        final Request request = new Request.Builder()
+//                .headers(HttpUtils.getCommonHeaders())
+//                .header("Referer", "market/product_lists/category/" + page)
+//                .header("Cookie", (cookie != null ? cookie.value.string(Charset.forName("UTF-8")) : ""))
+//                .url(url)
+//                .build();
+
         try {
             final Request request = new Request.Builder()
                     .headers(HttpUtils.getCommonHeaders())
+                    .header("Referer", "market/product_lists/category/" + page)
                     .url(url)
                     .build();
 
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpAutoProxy(request);
+
+            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
 
             if (responseWrap.isSuccess()) {
                 produceInfos = new ArrayList<ProduceInfo>();
@@ -104,9 +164,7 @@ public class ZNBaseService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            // 日志记录错误
-
+            log.error(e.getMessage(), e);
         }
 
         return produceInfos;
@@ -119,13 +177,24 @@ public class ZNBaseService {
     public CompanyInfo requestCompanyInfo(String url) {
         CompanyInfo info = null;
 
+//        Header cookie = getCookie();
+//
+//        final Request request = new Request.Builder()
+//                .headers(HttpUtils.getCommonHeaders())
+//                .header("Referer", BASE_URL)
+//                .header("Cookie", (cookie != null ? cookie.value.string(Charset.forName("UTF-8")) : ""))
+//                .url(url)
+//                .build();
+
         try {
+
             final Request request = new Request.Builder()
                     .headers(HttpUtils.getCommonHeaders())
+                    .header("Referer", BASE_URL)
                     .url(url)
                     .build();
 
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpAutoProxy(request);
+            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
 
             if (responseWrap.isSuccess()) {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
@@ -173,10 +242,7 @@ public class ZNBaseService {
                 info.category = category;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-
-            // 记录日志
-
+            log.error(e.getMessage(), e);
         }
 
         return info;
@@ -223,7 +289,7 @@ public class ZNBaseService {
             int endLength = arr.length;
 
             if (sourceLength != endLength) {
-                System.out.println("Category 重复,但已经去重, 原来类型： " + categoryStr + " , 去重复后： " + new Gson().toJson(categoryList));
+                log.debug("Category 重复,但已经去重, 原来类型： " + categoryStr + " , 去重复后： " + new Gson().toJson(categoryList));
             }
 
             // 判断类别是否存在于数据库
@@ -233,14 +299,7 @@ public class ZNBaseService {
             Category[] categories = new Category[arr.length];
 
             for (int i = 0; i < arr.length; i++) {
-                String cname = null;
-                try {
-
-                    cname = arr[i].trim();
-                } catch (Exception e) {
-                    System.err.println(categoryStr);
-                }
-
+                String cname = arr[i].trim();
                 boolean exists = categoryExists(cname);
                 fromDb[i] = exists;
 
@@ -287,9 +346,7 @@ public class ZNBaseService {
                 categoryInsert(category);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-
-            // 记录日志
+            log.error(e.getMessage(), e);
         }
 
 
@@ -399,6 +456,22 @@ public class ZNBaseService {
         } finally {
             MyBatisUtils.closeSession(sqlSession);
         }
+    }
+
+    // 查询最大页数 ( 根据平台 )
+    public int produceMaxPage() {
+        int result = 1;
+        SqlSession sqlSession = null;
+        try {
+            sqlSession = MyBatisUtils.openSession();
+            BaseMapper mapper = sqlSession.getMapper(BaseMapper.class);
+            result = mapper.produceMaxPage(platform);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            MyBatisUtils.closeSession(sqlSession);
+        }
+        return result;
     }
 
 

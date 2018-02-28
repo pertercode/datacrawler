@@ -26,7 +26,8 @@ public class HttpHeaderUtils {
     static int index = -1;
 
     public static String getNextUserAgent() {
-        if (index > USER_AGENT_ARR.length) index = 0;
+        index ++ ;
+        if (index >= USER_AGENT_ARR.length) index = 0;
         return USER_AGENT_ARR[index];
     }
 

@@ -7,7 +7,7 @@ import java.io.InputStreamReader;
  * 自动拨号以切换IP
  */
 public class AdslUtils {
-    public static final String ADSL_TITLE = "051610767288";
+    public static final String ADSL_TITLE = "宽带连接";
     public static final String ADSL_NAME = "051610767288";
     public static final String ADSL_PASS = "111222";
 

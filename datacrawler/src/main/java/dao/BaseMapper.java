@@ -19,8 +19,8 @@ public interface BaseMapper {
 
     void companyReplace(@Param("companyInfo") CompanyInfo companyInfo);
 
-//    /// 产品
+    //    /// 产品
     void produceReplace(@Param("produceInfo") ProduceInfo produceInfo);
 
-
+    int produceMaxPage(@Param("platform") String platform);
 }

@@ -28,6 +28,10 @@
 
     </select>
 
+    <!--以平台字符串开头的，数据这个平台数据得最大页数-->
+    <select id="produceMaxPage" parameterType="string" resultType="integer">
+        SELECT ifnull(MAX(p_page),1) FROM crawler_produce WHERE  left(_id, length('${platform}') )='${platform}'
+    </select>
 
     <insert id="companyReplace" parameterType="CompanyInfo">
         REPLACE INTO `lz_crawler`.`crawler_company` (`_id`, `cid`, `cName`, `cConcat`, `cMobile`, `cPhone`, `cQq`, `cAddress`)
