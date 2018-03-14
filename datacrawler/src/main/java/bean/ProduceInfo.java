@@ -23,6 +23,9 @@ public class ProduceInfo {
     // 商品详情连接
     private String pUrl;
 
+    // 商品所属企业的URL
+    private String pCUrl;
+
     // 商品价格
     private String price;
 
@@ -80,6 +83,14 @@ public class ProduceInfo {
 
     public void setpUrl(String pUrl) {
         this.pUrl = pUrl;
+    }
+
+    public String getpCUrl() {
+        return pCUrl;
+    }
+
+    public void setpCUrl(String pCUrl) {
+        this.pCUrl = pCUrl;
     }
 
     public String getPrice() {

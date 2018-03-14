@@ -1,9 +1,8 @@
-package http;
+package shop.lezhu.crawler.http;
 
 import okhttp3.*;
 
 import java.io.IOException;
-import java.net.Proxy;
 import java.util.concurrent.TimeUnit;
 
 public class HttpUtils {
@@ -19,16 +18,16 @@ public class HttpUtils {
     public static final int connection_time = 8;
     public static final int reader_time = 10;
 
-    private static okhttp3.OkHttpClient mOkHttpClient = null;
+    private static OkHttpClient mOkHttpClient = null;
 
 
     public static synchronized OkHttpClient client() {
         if (mOkHttpClient == null) {
-            mOkHttpClient = new okhttp3.OkHttpClient.Builder()
+            mOkHttpClient = new OkHttpClient.Builder()
                     .connectTimeout(connection_time, TimeUnit.SECONDS)
                     .readTimeout(reader_time, TimeUnit.SECONDS)
-                    .proxy(ProxyUtils.getProxy())
-                    .proxyAuthenticator(ProxyUtils.getProxyAuthenticator())
+//                    .proxy(ProxyUtils.getProxy())
+//                    .proxyAuthenticator(ProxyUtils.getProxyAuthenticator())
                     .build();
         }
         return mOkHttpClient;
@@ -54,7 +53,6 @@ public class HttpUtils {
         Headers.Builder builder = new Headers.Builder();
         builder.add("Accept", "*/*");
         builder.add("User-Agent", HttpHeaderUtils.getNextUserAgent());
-        builder.add("X-Forwarded-For", IpUtils.getRandomIp());
         return builder.build();
     }
 
@@ -69,55 +67,35 @@ public class HttpUtils {
         }
     }
 
+    /**
+     * 自动重试的HTTP 请求
+     *
+     * @return
+     */
     public static synchronized ResponseWrap retryHttp(Request request) {
-        return retryHttp(request, "UTF-8");
-    }
-
-    public static synchronized ResponseWrap retryHttp(Request request, String charset) {
         ResponseWrap responseWrap = new ResponseWrap();
         for (int i = 0; i < retry_count; i++) {
 
             Call call = client().newCall(request);
             try {
                 responseWrap.response = call.execute();
+                responseWrap.body = responseWrap.response.body().string();
 
-                byte[] b = responseWrap.response.body().bytes();
-                String body = new String(b, charset);
-                responseWrap.body = body;
-                responseWrap.e = null;
-                if (responseWrap.isSuccess())
-                    return responseWrap;
+                return responseWrap;
             } catch (IOException e) {
                 responseWrap.e = e;
             }
 
             if (retry_time > 0) {
-                try {
-                    Thread.sleep(retry_time * 1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    Thread.sleep(retry_time * 1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
             }
         }
         return responseWrap;
     }
-
-
-    public static String errorString(ResponseWrap responseWrap) {
-        int code = responseWrap.response.code();
-        String url = responseWrap.response.request().url().url().toString();
-        String message = responseWrap.response.message();
-        String body = responseWrap.body;
-        return "[http_error] " + url + "\n" + code + " , " + message + "\n" + body;
-    }
-
-    public static String errorStringNoBody(ResponseWrap responseWrap) {
-        int code = responseWrap.response.code();
-        String url = responseWrap.response.request().url().url().toString();
-        String message = responseWrap.response.message();
-        return "[http_error] " + url + "\n" + code + " , " + message ;
-    }
-
 
 
     /**

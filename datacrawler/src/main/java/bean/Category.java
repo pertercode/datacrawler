@@ -1,5 +1,8 @@
 package bean;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 分类表
  */
@@ -22,8 +25,26 @@ public class Category {
     // 是否为最低分类
     private Integer c_islow;
 
-    // 父分类的名称
+    // 父分类的ID
     private String c_parent;
+
+    // 查询分类下属产品的
+    private String c_url;
+
+    // 子分类
+    private List<Category> categories = new ArrayList<Category>();
+
+    public List<Category> getCategories() {
+        return categories;
+    }
+
+    public String getC_url() {
+        return c_url;
+    }
+
+    public void setC_url(String c_url) {
+        this.c_url = c_url;
+    }
 
     public String get_id() {
         return _id;

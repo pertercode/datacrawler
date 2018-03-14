@@ -10,8 +10,11 @@ Target Server Type    : MariaDB
 Target Server Version : 100213
 File Encoding         : 65001
 
-Date: 2018-02-28 12:21:20
+Date: 2018-03-08 09:34:44
 */
+
+## Database
+## CREATE DATABASE  `lz_crawler` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 SET FOREIGN_KEY_CHECKS=0;
 
@@ -61,3 +64,25 @@ CREATE TABLE `crawler_produce` (
   `pcompanyId` varchar(255) DEFAULT '' COMMENT '企业ID',
   PRIMARY KEY (`_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Table structure for crawler_produce
+-- ----------------------------
+DROP TABLE IF EXISTS `crawler_typename`;
+CREATE TABLE `crawler_typename` (
+  `_id` VARCHAR(200) NOT NULL COMMENT '数据ID',
+  `tname` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '规格名',
+  `t_category` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '规格所属分类ID',
+  PRIMARY KEY (`_id`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Table structure for crawler_produce
+-- ----------------------------
+DROP TABLE IF EXISTS `crawler_typevalue`;
+CREATE TABLE `crawler_typevalue` (
+  `_id` VARCHAR(200) NOT NULL COMMENT '数据ID',
+  `tvalue` VARCHAR(100) DEFAULT '' COMMENT '规格值',
+  `t_typename` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '规格名称ID',
+  PRIMARY KEY (`_id`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;

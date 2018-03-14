@@ -21,6 +21,20 @@
         VALUES (#{category._id}, #{category.c_id}, #{category.c_name}, #{category.c_level}, #{category.c_islow}, #{category.c_parent});
     </insert>
 
+    <insert id="categoryReplace" parameterType="bean.Category">
+        REPLACE INTO `lz_crawler`.`crawler_category` (`_id`, `c_id`, `c_name`, `c_level`, `c_islow`, `c_parent`)
+        VALUES (#{category._id}, #{category.c_id}, #{category.c_name}, #{category.c_level}, #{category.c_islow}, #{category.c_parent});
+    </insert>
+
+    <insert id="categoryReplaceList" parameterType="arraylist">
+        REPLACE INTO `lz_crawler`.`crawler_category` (`_id`, `c_id`, `c_name`, `c_level`, `c_islow`, `c_parent`)
+        VALUES
+
+        <foreach collection="list" item="item" index="index" separator="," >
+            (#{item._id}, #{item.c_id}, #{item.c_name}, #{item.c_level}, #{item.c_islow}, #{item.c_parent})
+        </foreach>
+    </insert>
+
     <!--ORDER BY c_level DESC LIMIT 0 , 1-->
     <select id="categorySelect" resultMap="Category">
         SELECT * FROM `lz_crawler`.`crawler_category` WHERE c_name = #{cname}
@@ -33,6 +47,11 @@
         SELECT ifnull(MAX(p_page),1) FROM crawler_produce WHERE  left(_id, length('${platform}') )='${platform}'
     </select>
 
+    <select id="produceMaxPageByCategory"  resultType="integer">
+        SELECT ifnull(MAX(p_page),1) FROM crawler_produce WHERE  left(_id, length('${platform}') )='${platform}' AND p_category = #{categoryId}
+    </select>
+
+
     <insert id="companyReplace" parameterType="CompanyInfo">
         REPLACE INTO `lz_crawler`.`crawler_company` (`_id`, `cid`, `cName`, `cConcat`, `cMobile`, `cPhone`, `cQq`, `cAddress`)
         VALUES (#{companyInfo._id}, #{companyInfo.cId}, #{companyInfo.cName}, #{companyInfo.cConcat}, #{companyInfo.cMobile}, #{companyInfo.cPhone}, #{companyInfo.cQq}, #{companyInfo.cAddress});
@@ -42,4 +61,15 @@
         REPLACE INTO `lz_crawler`.`crawler_produce` (`_id`, `p_page`, `pid`, `pname`, `pprice`, `pimgsrc`, `pimglocal`, `p_category`, `pcompanyId`)
         VALUES (#{produceInfo._id}, #{produceInfo.page}, #{produceInfo.pId}, #{produceInfo.pName}, #{produceInfo.price}, #{produceInfo.imgSrc}, #{produceInfo.imgLocal}, #{produceInfo.category._id}, #{produceInfo.companyInfo._id});
     </insert>
+
+    <insert id="typeNameReplace" parameterType="bean.TypeName">
+        REPLACE INTO `lz_crawler`.`crawler_typename` (`_id`, `tname`, `t_category`)
+        VALUES (#{typeName._id},  #{typeName.tName},#{typeName.categoryId});
+    </insert>
+
+    <insert id="typeValueReplace" parameterType="bean.TypeValue">
+        REPLACE INTO `lz_crawler`.`crawler_typevalue` (`_id`, `tvalue`, `t_typename`)
+        VALUES (#{typeValue._id}, #{typeValue.tValue}, #{typeValue.typeNameId});
+    </insert>
+
 </mapper>

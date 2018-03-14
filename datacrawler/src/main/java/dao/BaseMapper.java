@@ -1,9 +1,10 @@
 package dao;
 
-import bean.Category;
-import bean.CompanyInfo;
-import bean.ProduceInfo;
+import bean.*;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public interface BaseMapper {
 
@@ -11,6 +12,10 @@ public interface BaseMapper {
     int categoryCount(@Param("cname") String cname);
 
     void categoryInsert(@Param("category") Category category);
+
+    void categoryReplace(@Param("category") Category category);
+
+    void categoryReplaceList(List<Category> categories);
 
     Category categorySelect(@Param("cname") String cname);
 
@@ -22,5 +27,15 @@ public interface BaseMapper {
     //    /// 产品
     void produceReplace(@Param("produceInfo") ProduceInfo produceInfo);
 
+
     int produceMaxPage(@Param("platform") String platform);
+
+    int produceMaxPageByCategory(@Param("platform") String platform ,@Param("categoryId") String categoryId);
+
+
+    //   ////  规格型号
+    void typeNameReplace(@Param("typeName") TypeName typeName);
+
+    void typeValueReplace(@Param("typeValue") TypeValue typeValue);
+
 }
