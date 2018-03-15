@@ -7,25 +7,21 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.junit.Test;
+import services.YJLService;
 import services.ZhuNiuBaseService;
 import utils.IDUtils;
 import utils.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+public class EJLTester {
 
-public class ZhuNiuTester {
-
-    private String baseUrl = "http://www.zhuniu.com/";
-
-    private String platform = "zhuniu";
-
-    private BaseDao baseDao = new BaseDao();
 
 
     @Test
     public void runTester() {
+        YJLService service = new YJLService() ;
+        service.requestCompany("http://shop3364.ejianlian.com/contact/");
     }
+
 
 
 }

@@ -22,6 +22,7 @@ public class App {
         System.out.println(BASE_PATH);
     }
 
+
     public static void main(String[] args) {
         if (args.length > 0) {
             String platform = args[0];

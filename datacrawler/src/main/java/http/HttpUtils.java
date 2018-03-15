@@ -21,6 +21,8 @@ public class HttpUtils {
 
     private static okhttp3.OkHttpClient mOkHttpClient = null;
 
+    private static okhttp3.OkHttpClient mOkHttpClientNoProxy = null;
+
 
     public static synchronized OkHttpClient client() {
         if (mOkHttpClient == null) {
@@ -32,6 +34,16 @@ public class HttpUtils {
                     .build();
         }
         return mOkHttpClient;
+    }
+
+    public static synchronized OkHttpClient clientNoProxy() {
+        if (mOkHttpClientNoProxy == null) {
+            mOkHttpClientNoProxy = new okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(connection_time, TimeUnit.SECONDS)
+                    .readTimeout(reader_time, TimeUnit.SECONDS)
+                    .build();
+        }
+        return mOkHttpClientNoProxy;
     }
 
 
@@ -69,6 +81,7 @@ public class HttpUtils {
         }
     }
 
+
     public static synchronized ResponseWrap retryHttp(Request request) {
         return retryHttp(request, "UTF-8");
     }
@@ -103,6 +116,42 @@ public class HttpUtils {
     }
 
 
+
+    public static synchronized ResponseWrap retryHttpNoProxy(Request request) {
+        return retryHttpNoProxy(request, "UTF-8");
+    }
+
+    public static synchronized ResponseWrap retryHttpNoProxy(Request request, String charset) {
+        ResponseWrap responseWrap = new ResponseWrap();
+        for (int i = 0; i < retry_count; i++) {
+
+            Call call = clientNoProxy().newCall(request);
+            try {
+                responseWrap.response = call.execute();
+
+                byte[] b = responseWrap.response.body().bytes();
+                String body = new String(b, charset);
+                responseWrap.body = body;
+                responseWrap.e = null;
+                if (responseWrap.isSuccess())
+                    return responseWrap;
+            } catch (IOException e) {
+                responseWrap.e = e;
+            }
+
+            if (retry_time > 0) {
+                try {
+                    Thread.sleep(retry_time * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return responseWrap;
+    }
+
+
+
     public static String errorString(ResponseWrap responseWrap) {
         int code = responseWrap.response.code();
         String url = responseWrap.response.request().url().url().toString();
@@ -115,9 +164,8 @@ public class HttpUtils {
         int code = responseWrap.response.code();
         String url = responseWrap.response.request().url().url().toString();
         String message = responseWrap.response.message();
-        return "[http_error] " + url + "\n" + code + " , " + message ;
+        return "[http_error] " + url + "\n" + code + " , " + message;
     }
-
 
 
     /**

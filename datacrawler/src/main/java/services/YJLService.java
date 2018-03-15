@@ -1,8 +1,7 @@
 package services;
 
-import bean.Category;
-import bean.CompanyInfo;
-import bean.ProduceInfo;
+import bean.*;
+import com.google.gson.Gson;
 import dao.BaseDao;
 import http.HttpUtils;
 import okhttp3.Request;
@@ -12,6 +11,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import utils.IDUtils;
+import utils.LogUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,223 +23,228 @@ import java.util.regex.Pattern;
  */
 public class YJLService {
 
-    private static final Logger log = Logger.getLogger(YJLService.class);
+    private LogUtils log = new LogUtils(platform, YJLService.class);
 
     private static final String BASE_URL = "http://www.ejianlian.com/";
 
-    private static final String platform = "ejianlian";
+    public static final String platform = "ejianlian";
 
     private BaseDao baseDao = new BaseDao();
 
-    /**
-     * 查询所有分类，返回所有最低级分类
-     *
-     * @return 返回所有最底级分类
-     */
-    public List<Category> requestCategory() {
-        List<Category> categories = null;
-        String url = "http://www.ejianlian.com/home/market/material";
-
-        try {
-            final Request request = new Request.Builder()
-                    .headers(HttpUtils.getCommonHeaders())
-                    .header("Referer", BASE_URL)
-                    .url(url)
-                    .build();
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
-
-            if (responseWrap.isSuccess()) {
-                categories = new ArrayList<Category>();
-                Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
-                Elements categoryElements = doc.select(".menu_ul .item");
-
-                for (int i = 0; i < categoryElements.size(); i++) {
-                    Element categoryMenu = categoryElements.get(i);
-
-                    // 1级分类的名称
-                    String level1CategoryName = categoryMenu.select(".item-nav .my").get(0).ownText().trim();
-
-                    // 1J分类ID
-                    String cid = null;
-
-                    String cid_level1_uuid = IDUtils.uuid();
-
-                    bean.Category level1 = null;
-
-                    Elements level2Categorys = categoryMenu.select(".item-nav .top-factory a");
-
-                    // 循环获取1J分类下的二级分类
-                    for (int j = 0; j < level2Categorys.size(); j++) {
-                        Element level2Element = level2Categorys.get(j);
-
-                        // 级别2 ID
-                        String level2CategoryId = level2Element.attr("data-id").trim();
-                        String level2CategoryName = level2Element.attr("title").trim();
-
-                        String href = BASE_URL.substring(0, BASE_URL.length() - 1) + level2Element.attr("href").trim();
-
-                        // 匹配顶级分类级别1的ID
-                        try {
-                            // http://www.ejianlian.com/Home/Goods/productlist/cat_id/41/
-                            String regex = "cat_id/(\\d+)/";
-
-                            Pattern pattern = Pattern.compile(regex);
-
-                            Matcher matcher = pattern.matcher(href);
-
-                            if (matcher.find()) {
-                                cid = matcher.group(1);
-                            }
-                        } catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
-
-                        if (level1 == null) {
-                            if (cid == null || cid.length() < 1)
-                                cid = cid_level1_uuid;
-
-                            String _id = IDUtils.genId(platform, cid);
-
-                            // 初始化 1J 分类
-                            level1 = new bean.Category(_id, platform, cid, level1CategoryName, 0, 0, "0");
-
-                            log.info("1级分类 " + level1CategoryName + " 已入库... ");
-                        }
-
-                        // 二级分类
-                        bean.Category level2 = new bean.Category(IDUtils.genId(platform, level2CategoryId), platform, level2CategoryId, level2CategoryName, 1, null, level1.get_id());
-                        level2.setC_url(href);
-
-                        log.info("2级分类 " + level2CategoryName + " 已入库... parent = " + level1.get_id() + " ,  parent_name = " + level1.getC_name());
-
-                        level1.getCategories().add(level2);
-
-                        // 查询所有三级分类
-                        List<Category> level3_categorys = null;
-
-                        try {
-                            level3_categorys = requestChildCategory(href, level2);
-
-                            if (level3_categorys == null)
-                                throw new RuntimeException("level3_categorys from requestChildCategory is null ,  href  =  " + href);
-
-                            if (level3_categorys.size() > 0) {
-                                level2.setC_islow(0);
-                                level2.getCategories().addAll(level3_categorys);
-
-                                // 插入三级分类
-                                baseDao.categoryReplaceList(level2.getCategories());
-
-                                // 存储三级分类，便于抓取商品
-                                categories.addAll(level3_categorys);
-                            } else {
-                                level2.setC_islow(1);
-                                categories.add(level2);
-                            }
-
-                        } catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
-                    }
-
-
-                    // 插入 Level 1
-                    if (level1 != null) {
-                        baseDao.categoryReplace(level1);
-                        // 插入二级分类
-                        baseDao.categoryReplaceList(level1.getCategories());
-                    } else {
-                        log.error("level1 is null!");
-                    }
-                }
-            } else {
-                log.error("responseWrap not success , url  =  " + url);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return categories;
-    }
+    public List<Category> lowest = new ArrayList<Category>();
 
 
     /**
-     * 查询子分类
+     * 查询所有1J分类
      *
-     * @param url
      * @return
      */
-    private List<Category> requestChildCategory(String url, Category parent) {
-        List<Category> categories = null;
-        try {
-            final Request request = new Request.Builder()
-                    .headers(HttpUtils.getCommonHeaders())
-                    .header("Referer", BASE_URL)
-                    .url(url)
-                    .build();
+    public void requestCategory() {
+        String url = "http://ejianlian.com/Home/Goods/productlist/";
 
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", BASE_URL)
+                .url(url)
+                .build();
 
-            if (responseWrap.isSuccess()) {
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
+
+        if (responseWrap.isSuccess()) {
+            try {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
-                Elements categoryElements = doc.select(".option-default.clearfix.breed_1");
+                Elements categoryElements = doc.select(".tabbg-subject a");
 
-                categories = new ArrayList<Category>();
+                // 清空最低级分类
+                lowest.clear();
 
-                // 说明存在三级分类
-                if (categoryElements.size() > 1) {
+                for (int i = 0; i < categoryElements.size(); i++) {
+                    Element categoryElement = categoryElements.get(i);
+                    // 连接
+                    String href = BASE_URL.substring(0, BASE_URL.length() - 1) + categoryElement.attr("href").trim();
+                    String cName = categoryElement.text().trim();
+                    String cid = IDUtils.uuid();
+                    Pattern pattern = Pattern.compile("cat_id/(\\d+)/");
+                    Matcher matcher = pattern.matcher(href);
+                    if (matcher.find()) {
+                        cid = matcher.group(1);
+                    }
+                    String c_url = "http://ejianlian.com/Home/Goods/productlist/cat_id/" + cid + "/";
+                    Category category = new Category(IDUtils.genId(platform, cid), platform, cid, cName, 0, 0, "0");
+                    category.setC_url(c_url);
+                    requestChildCategory(category);
+                    baseDao.categoryReplace(category);
 
-                    Element categoryElement = categoryElements.get(1);
+                }
+            } catch (Exception e) {
+                // 记录失败日志
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(str, e);
+            }
+        } else {
+            // 记录失败日志
+            String str = HttpUtils.errorString(responseWrap);
+            log.e(str, responseWrap.e);
+        }
+    }
 
-                    categoryElements = categoryElement.select(".clearfix li a");
+    /**
+     * 查询所有子分类
+     *
+     * @return
+     */
+    public void requestChildCategory(Category parent) {
+        String url = parent.getC_url();
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", BASE_URL)
+                .url(url)
+                .build();
 
-                    for (int i = 0; i < categoryElements.size(); i++) {
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
 
-                        categoryElement = categoryElements.get(i);
+        if (responseWrap.isSuccess()) {
+            try {
+                Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
+                int index = parent.getC_level();
+                Elements elements = doc.select(".option-default.clearfix.breed_1");
 
-                        String onclick = categoryElement.attr("onclick");
+                if (elements.size() > index) {
+                    Element element = elements.get(index);
 
-                        String categoryName = categoryElement.ownText().trim();
+                    Elements liElements = element.select(".listitem ul li");
 
-                        String regex = ",(\\d+)\\)";
+                    if (liElements.size() < 1) {
+                        // 没有子分类了
+                        parent.setC_islow(1);
+                        lowest.add(parent);
+                        return;
+                    }
 
-                        String cid = null;
+                    if (index >= 3) {
+                        String str = HttpUtils.errorStringNoBody(responseWrap);
+                        log.e("发现4J分类 , 请处理 !! \n" + str, null);
+                    }
 
-                        // 匹配顶级分类级别1的ID
-                        try {
-                            // goto('subbreed_2',609)
-                            Pattern pattern = Pattern.compile(regex);
+                    for (int i = 0; i < liElements.size(); i++) {
+                        Element li = liElements.get(i);
 
-                            Matcher matcher = pattern.matcher(onclick);
+                        Element a = li.select("a").get(0);
 
-                            if (matcher.find()) {
-                                cid = matcher.group(1);
-                            }
-                        } catch (Exception e) {
-                            log.error(e.getMessage(), e);
+                        String cName = a.ownText().trim();
+
+                        String cid = IDUtils.uuid();
+
+                        if (parent.getC_level() == 0) {
+                            cid = a.attr("href").split("/")[7];
+                        } else {
+                            cid = a.attr("onclick").split(",")[1].split("\\)")[0];
                         }
 
-                        if (cid == null)
-                            throw new RuntimeException("未匹配到类别ID , source =  " + onclick + " , regex = " + regex);
+                        String cUrl = BASE_URL.substring(0, BASE_URL.length() - 1) + a.attr("href").trim();
 
+                        Pattern pattern = Pattern.compile("breed_1/(\\d+)/");
 
-                        String href = url + "/subbreed_2/" + cid;
+                        Matcher matcher = pattern.matcher(cUrl);
 
-                        bean.Category category = new bean.Category(IDUtils.genId(platform, cid), platform, cid, categoryName, 2, 1, parent.get_id());
-                        category.setC_url(href);
+                        if (matcher.find()) {
+                            cid = matcher.group(1);
+                        }
 
-                        log.info("3级分类 " + categoryName + " 已入库... parent = " + parent.get_id() + " ,  parent_name = " + parent.getC_name());
+                        Category category = new Category(IDUtils.genId(platform, cid), platform, cid, cName, parent.getC_level() + 1, 0, parent.get_id());
 
-                        categories.add(category);
+                        if (category.getC_level() == 1) {
+                            cUrl = parent.getC_url() + "breed_1/" + category.getC_id() + "/";
+                        } else if (category.getC_level() == 2) {
+                            cUrl = parent.getC_url() + "subbreed_2/" + category.getC_id() + "/";
+                        } else {
+                            cUrl = parent.getC_url() + "subbreed_3/" + category.getC_id() + "/";
+                        }
+                        category.setC_url(cUrl);
+
+                        log.i("cid = " + cid + " , cName = " + cName + " ,  parentTypeId = " + parent.get_id() + "  , parentTypeName = " + parent.getC_name() + " , url = " + cUrl);
+
+                        //getType(category);
+
+                        requestChildCategory(category);
+                        baseDao.categoryReplace(category);
+
                     }
+                } else {
+                    // 没有子分类了
+                    parent.setC_islow(1);
+                    lowest.add(parent);
+                    return;
                 }
-            } else {
-                log.error("responseWrap not success , url  =  " + url);
+            } catch (Exception e) {
+                // 记录失败日志
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(str, e);
             }
-
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } else {
+            // 记录失败日志
+            String str = HttpUtils.errorString(responseWrap);
+            log.e(str, responseWrap.e);
         }
-        return categories;
+    }
+
+    /**
+     * 查询型号
+     */
+    public void getType(Category category) {
+
+        // 把URL创建好了
+        Request request = new Request.Builder().url(category.getC_url()).headers(HttpUtils.getCommonHeaders()).build();
+
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
+
+        if (responseWrap.isSuccess()) {
+            try {
+                String body = responseWrap.body;
+                Document doc = Jsoup.parse(body);
+                Elements elements = doc.select("#material");
+                if (elements.size() > 0) {
+                    for (int i = 0; i < elements.size(); i++) {
+                        Element type = elements.get(i).select("dt").get(0).select("span").get(0);
+                        TypeName typeName = new TypeName();
+                        typeName.settName(type.text().trim().split("：")[0]);
+                        typeName.set_id(IDUtils.genId(platform, typeName.gettName() + "_" + category.getC_id()));
+                        typeName.setCategoryId(category.get_id());
+                        baseDao.typeNameReplace(typeName);
+
+                        log.i("规格 = " + typeName);
+
+                        Elements value = elements.get(i).select("dd .listitem").get(0).select("li");
+                        for (int j = 0; j < value.size(); j++) {
+                            Element a = value.get(j).select("a").get(0);
+                            TypeValue typeValue = new TypeValue();
+                            String id = a.attr("onclick");
+                            String vid = id.split(",")[1].split("'")[1];
+                            typeValue.set_id(IDUtils.genId(platform, vid));
+                            typeValue.settValue(a.text().trim());
+                            typeValue.setTypeNameId(typeName.get_id());
+
+
+                            if (typeValue.gettValue().length() < 200) {
+                                baseDao.typeValueReplace(typeValue);
+                                log.i("值 = " + typeValue.gettValue());
+
+                            }
+                        }
+                    }
+                } else {
+                    log.i("该分类无规格型号 , ID = " + category.get_id() + " , " + category.getC_url());
+                }
+            } catch (Exception e) {
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(str, e);
+            }
+        } else {
+            // 记录失败日志
+            String str = HttpUtils.errorString(responseWrap);
+            log.e(str, responseWrap.e);
+        }
+
     }
 
 
@@ -257,162 +262,157 @@ public class YJLService {
             page = 1;
 
         String url = category.getC_url() + "/p/" + page + "/sort/2";
+        Integer totalPage = null;
 
-        try {
-            Integer totalPage = null;
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", BASE_URL)
+                .url(url)
+                .build();
 
-            final Request request = new Request.Builder()
-                    .headers(HttpUtils.getCommonHeaders())
-                    .header("Referer", BASE_URL)
-                    .url(url)
-                    .build();
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
 
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
-
-            if (responseWrap.isSuccess()) {
+        if (responseWrap.isSuccess()) {
+            try {
                 produceInfos = new ArrayList<ProduceInfo>();
+                Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
+                Elements produceElements = doc.select("#tab_img.tabitem.tabitem2 .imgitem");
 
-                try {
-                    Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
-                    Elements produceElements = doc.select("#tab_img.tabitem.tabitem2 .imgitem");
+                for (int i = 0; i < produceElements.size(); i++) {
+                    Element produceElement = produceElements.get(i);
+                    Element aTag = produceElement.select(".picbox a").get(0);
 
-                    for (int i = 0; i < produceElements.size(); i++) {
-                        Element produceElement = produceElements.get(i);
-                        Element aTag = produceElement.select(".picbox a").get(0);
+                    String href = aTag.attr("href").trim();
 
-                        String href = aTag.attr("href").trim();
+                    String p_id = href.substring(href.lastIndexOf('/') + 1);
 
-                        String p_id = href.substring(href.lastIndexOf('/') + 1);
+                    Element imgTag = produceElement.select(".picbox img").get(0);
 
-                        Element imgTag = produceElement.select(".picbox img").get(0);
+                    String imgSrc = imgTag.attr("src").trim();
 
-                        String imgSrc = imgTag.attr("src").trim();
+                    imgSrc = BASE_URL.substring(0, BASE_URL.length() - 1) + imgSrc;
 
-                        imgSrc = BASE_URL.substring(0, BASE_URL.length() - 1) + imgSrc;
+                    Element priceTag = produceElement.select(".ctxbox .price.f-fl strong").get(0);
 
-                        Element priceTag = produceElement.select(".ctxbox .price.f-fl strong").get(0);
+                    String price = priceTag.ownText().trim();
 
-                        String price = priceTag.ownText().trim();
+                    Element pNameTag = produceElement.select(".ctxbox .row2 a").get(0);
 
-                        Element pNameTag = produceElement.select(".ctxbox .row2 a").get(0);
-
-                        String pName = pNameTag.ownText().trim();
+                    String pName = pNameTag.ownText().trim();
 
 
-                        // 商品URL
-                        String pUrl = pNameTag.attr("href").trim();
-                        pUrl = BASE_URL.substring(0, BASE_URL.length() - 1) + pUrl;
+                    // 商品URL
+                    String pUrl = pNameTag.attr("href").trim();
+                    pUrl = BASE_URL.substring(0, BASE_URL.length() - 1) + pUrl;
 
-                        Element pCompanyUrlTag = produceElement.select(".ctxbox .row.row4 a").get(0);
-
-
-                        // 商品所属企业的信息URL
-                        String pCUrl = pCompanyUrlTag.attr("href").trim();
-                        pCUrl += "/contact/";
+                    Element pCompanyUrlTag = produceElement.select(".ctxbox .row.row4 a").get(0);
 
 
-                        Element pCompanyTag = produceElement.select(".ctxbox .row4 a").get(0);
-
-                        String pCompanyName = pCompanyTag.ownText().trim();
-
-
-                        ProduceInfo produceInfo = new ProduceInfo(IDUtils.genId(platform, p_id), page, null, p_id, pName, pUrl, price, imgSrc);
-                        produceInfo.setpCUrl(pCUrl);
+                    // 商品所属企业的信息URL
+                    String pCUrl = pCompanyUrlTag.attr("href").trim();
+                    pCUrl += "/contact/";
 
 
-                        if (totalPage == null) {
-                            String totalPageStr = doc.select(".marrow").get(0).ownText().trim();
-                            totalPageStr = totalPageStr.substring(1);
-                            totalPage = Integer.parseInt(totalPageStr);
-                        }
+                    Element pCompanyTag = produceElement.select(".ctxbox .row4 a").get(0);
 
-                        produceInfo.setcName(pCompanyName);
+                    String pCompanyName = pCompanyTag.ownText().trim();
 
-                        produceInfo.setTotalPage(totalPage);
 
-                        produceInfos.add(produceInfo);
+                    ProduceInfo produceInfo = new ProduceInfo(IDUtils.genId(platform, p_id), page, null, p_id, pName, pUrl, price, imgSrc);
+
+                    // 企业URL
+                    produceInfo.setpCUrl(pCUrl);
+
+                    if (totalPage == null) {
+                        String totalPageStr = doc.select(".marrow").get(0).ownText().trim();
+                        totalPageStr = totalPageStr.substring(1);
+                        totalPage = Integer.parseInt(totalPageStr);
                     }
-
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
-
-                    produceInfos = null;
+                    produceInfo.setcName(pCompanyName);
+                    produceInfo.setTotalPage(totalPage);
+                    produceInfos.add(produceInfo);
                 }
-            } else {
-                log.error("responseWrap not success , url  =  " + url);
+
+            } catch (Exception e) {
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(str, e);
+                produceInfos = null;
             }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } else {
+            String str = HttpUtils.errorStringNoBody(responseWrap);
+            log.e(str, responseWrap.e);
+            produceInfos = null;
         }
         return produceInfos;
     }
 
 
+    /**
+     * 从商品页面查询企业信息
+     *
+     * @param url
+     * @return
+     */
     public CompanyInfo requestCompanyInfo(String url) {
         CompanyInfo companyInfo = null;
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", BASE_URL)
+                .url(url)
+                .build();
 
-        try {
-            Integer totalPage = null;
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
 
-            final Request request = new Request.Builder()
-                    .headers(HttpUtils.getCommonHeaders())
-                    .header("Referer", BASE_URL)
-                    .url(url)
-                    .build();
+        if (responseWrap.isSuccess()) {
+            try {
+                Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
+                Element cNameElement = doc.select(".brand h3").get(0);
 
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
+                String cName = cNameElement.ownText().trim();
 
-            if (responseWrap.isSuccess()) {
+                Element cidElement = doc.select(".wtbtn").get(0);
+
+                String companyUrl = cidElement.attr("href");
+
+                String cid = "";
+
+                // 匹配顶级分类级别1的ID
                 try {
-                    Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
-                    Element cNameElement = doc.select(".brand h3").get(0);
+                    String regex = "shop(\\d+)\\.";
 
-                    String cName = cNameElement.ownText().trim();
+                    Pattern pattern = Pattern.compile(regex);
 
-                    Element cidElement = doc.select(".wtbtn").get(0);
+                    Matcher matcher = pattern.matcher(companyUrl);
 
-                    String companyUrl = cidElement.attr("href");
-
-                    String cid = "";
-
-                    // 匹配顶级分类级别1的ID
-                    try {
-                        String regex = "shop(\\d+)\\.";
-
-                        Pattern pattern = Pattern.compile(regex);
-
-                        Matcher matcher = pattern.matcher(companyUrl);
-
-                        if (matcher.find()) {
-                            cid = matcher.group(1);
-                        }
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
+                    if (matcher.find()) {
+                        cid = matcher.group(1);
                     }
-
-                    Elements companyInfoElements = doc.select(".contact li");
-
-                    String cContactName = companyInfoElements.get(0).child(1).ownText().trim();
-
-                    String cMobile = companyInfoElements.get(1).child(2).attr("data-tel").trim();
-
-                    String cPhone = cMobile;
-
-                    String cAddress = companyInfoElements.get(2).child(1).ownText().trim();
-
-                    companyInfo = new CompanyInfo(IDUtils.genId(platform, cid), cid, cName, cContactName, cMobile, cPhone, "", cAddress);
-
                 } catch (Exception e) {
-                    log.error(e.getMessage() + " url  =  " + url, e);
-                    companyInfo = null;
-
-
+                    String str = HttpUtils.errorStringNoBody(responseWrap);
+                    log.e(str, e);
                 }
-            } else {
-                log.error("responseWrap not success , url  =  " + url);
+
+                Elements companyInfoElements = doc.select(".contact li");
+
+                String cContactName = companyInfoElements.get(0).child(1).ownText().trim();
+
+                String cMobile = companyInfoElements.get(1).child(2).attr("data-tel").trim();
+
+                String cPhone = cMobile;
+
+                String cAddress = companyInfoElements.get(2).child(1).ownText().trim();
+
+                companyInfo = new CompanyInfo(IDUtils.genId(platform, cid), cid, cName, cContactName, cMobile, cPhone, "", cAddress);
+
+            } catch (Exception e) {
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(str, e);
+                companyInfo = null;
             }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } else {
+            String str = HttpUtils.errorString(responseWrap);
+            log.e(str, responseWrap.e);
+            companyInfo = null;
         }
         return companyInfo;
     }
@@ -425,169 +425,162 @@ public class YJLService {
      */
     public CompanyInfo requestCompany(String url) {
         CompanyInfo companyInfo = null;
-        try {
-            Integer totalPage = null;
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", BASE_URL)
+                .url(url)
+                .build();
 
-            final Request request = new Request.Builder()
-                    .headers(HttpUtils.getCommonHeaders())
-                    .header("Referer", BASE_URL)
-                    .url(url)
-                    .build();
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
 
-            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttp(request);
+        if (responseWrap.isSuccess()) {
+            try {
+                Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
 
-            if (responseWrap.isSuccess()) {
-                try {
-                    Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
+                String _id = doc.getElementById("sid").val().trim();
 
-                    String _id = doc.getElementById("sid").val().trim();
-
-                    Elements companyInfoElements = doc.select(".option-default.clearfix td");
-
-                    if (companyInfoElements.size() < 1)
+                Elements companyInfoElements = doc.select(".option-default.clearfix td");
+                String cName = "";
+                String mobile = "";
+                String cAddress = "";
+                String cContactName = "";
+                String qq = "";
+                String cPhone = "";
+                if (companyInfoElements.size() < 1) {
+                    companyInfoElements = doc.select(".contactus");
+                    if (companyInfoElements.size() >= 1) {
+                        Element td = companyInfoElements.select("tr").get(0).select("td").get(0);
+                        cName = td.select("h1").get(0).text().trim();
+                        mobile = td.select(".kefutel").get(0).text().trim();
+                        cAddress = td.select("p").get(4).text().trim().split("：")[1];
+                        String temp = doc.select(".lxrul").text().trim();
+                        temp = temp.substring(1);
+                        cContactName = temp.split("    ")[0];
+                        cPhone = temp.split("    ")[1];
+                        cPhone = cPhone.split("-")[0] + cPhone.split("-")[1] + cPhone.split("-")[2];
+                        if (doc.select(".lxrul").get(0).select("a").size() > 0) {
+                            String href = doc.select(".lxrul").get(0).select("a").attr("href");
+                            qq = href.split("uin=")[1].split("&")[0];
+                            System.out.println(qq);
+                        }
+                        companyInfo = new CompanyInfo(IDUtils.genId(platform, _id), _id, cName, cContactName, mobile, cPhone, qq, cAddress);
+                        return companyInfo;
+                    } else {
                         throw new RuntimeException("未找到 企业信息 , companyInfoElements.size()  < 1 , 选择器 = .option-default.clearfix td  url = " + url);
-
-                    Elements companyInfoChildElements = companyInfoElements.get(0).children();
-
-                    if (companyInfoChildElements.size() < 1)
-                        throw new RuntimeException("未找到 企业信息 ,  companyInfoChildElements.size()  < 1 , 选择器 = .option-default.clearfix td  url = " + url);
-
-                    // 企业名称
-                    String cName = companyInfoChildElements.get(0).ownText().trim();
-
-                    // 企业电话
-                    String mobile = companyInfoChildElements.get(1).text().trim();
-                    int index = mobile.indexOf('：');
-
-                    if (index >= 0) {
-                        mobile = mobile.substring(index + 1).trim();
-                    } else {
-                        mobile = "";
                     }
-
-                    // 企业地址
-                    String cAddress = companyInfoChildElements.get(5).ownText().trim();
-
-                    index = cAddress.indexOf('：');
-
-                    if (index >= 0) {
-                        cAddress = cAddress.substring(index + 1).trim();
-                    } else {
-                        cAddress = "";
-                    }
-
-                    Elements lianXiElements = doc.select(".lianxi");
-
-                    if (lianXiElements.size() < 1) {
-                        log.warn("未找到 联系人信息 ,  lianXiElements.size()  < 1 , 选择器 = .lianxi");
-
-                        return null;
-                    }
-
-                    String cContactName = "";
-                    String qq = "";
-
-                    String cPhone = "";
-
-                    for (int i = 0; i < lianXiElements.size(); i++) {
-                        Element element = lianXiElements.get(i);
-
-                        Element sourceElement = element;
-
-                        // QQ 相关元素
-                        Elements qqElements = element.select("p a");
-
-                        String html = element.html();
-
-                        Pattern p = Pattern.compile("\\<!--([\\s\\S.]+)--\\>");
-
-                        Matcher m = p.matcher(html);
-                        if (m.find()) {
-                            html = m.group(1);
-                            element = Jsoup.parse(html);
-                        }
-
-                        Elements lianXiInfoElements = element.select(".telbtn");
-
-                        String tempContactName = "无";
-                        String tempPhone = "无";
-
-                        if (lianXiInfoElements.size() < 1) {
-
-                            tempContactName = sourceElement.child(0).ownText().trim();
-                            index = tempContactName.indexOf('：');
-
-                            if (index >= 0) {
-                                tempContactName = tempContactName.substring(index + 1).trim();
-                                tempContactName = tempContactName.trim();
-                            } else {
-                                tempContactName = "无";
-                            }
-
-                            tempPhone = sourceElement.child(1).text().trim();
-                            index = tempPhone.indexOf('：');
-
-                            if (index >= 0) {
-                                tempPhone = tempPhone.substring(index + 1).trim();
-                            } else {
-                                tempPhone = "无";
-                            }
-
-                            tempPhone = tempPhone.replaceAll("-", "");
-
-                        } else {
-                            Element lianXiElement = lianXiInfoElements.get(0);
-                            tempContactName = lianXiElement.attr("data-contact").trim();
-                            if (tempContactName.length() < 1) tempContactName = "无";
-                            tempPhone = lianXiElement.attr("data-tel").trim();
-                            if (tempPhone.length() < 1) tempPhone = "无";
-                        }
-
-
-                        String tempQq = "无";
-
-                        if (qqElements.size() > 0) {
-                            String qqHref = qqElements.get(0).attr("href");
-
-                            // 匹配顶级分类级别1的ID
-                            try {
-                                String regex = "uin=(\\d+)&";
-
-                                Pattern pattern = Pattern.compile(regex);
-
-                                Matcher matcher = pattern.matcher(qqHref);
-
-                                if (matcher.find()) {
-                                    tempQq = matcher.group(1);
-                                }
-                            } catch (Exception e) {
-                                log.error(e.getMessage(), e);
-                            }
-                        }
-
-                        cContactName += tempContactName;
-                        cPhone += tempPhone;
-                        qq += tempQq;
-
-                        if (i < lianXiElements.size() - 1) {
-                            cContactName += ",";
-                            cPhone += ",";
-                            qq += ",";
-                        }
-
-                    }
-
-                    companyInfo = new CompanyInfo(IDUtils.genId(platform, _id), _id, cName, cContactName, mobile, cPhone, qq, cAddress);
-
-                } catch (Exception e) {
-                    log.error(e.getMessage() + " , url  =  " + url, e);
-                    companyInfo = null;
                 }
-            } else {
-                log.error("responseWrap not success , url  =  " + url);
+                Elements companyInfoChildElements = companyInfoElements.get(0).children();
+
+                if (companyInfoChildElements.size() < 1)
+                    throw new RuntimeException("未找到 企业信息 ,  companyInfoChildElements.size()  < 1 , 选择器 = .option-default.clearfix td  url = " + url);
+
+                // 企业名称
+                cName = companyInfoChildElements.get(0).ownText().trim();
+                // 企业电话
+                mobile = companyInfoChildElements.get(1).text().trim();
+                int index = mobile.indexOf('：');
+
+                if (index >= 0) {
+                    mobile = mobile.substring(index + 1).trim();
+                } else {
+                    mobile = "";
+                }
+
+                // 企业地址
+                cAddress = companyInfoChildElements.get(5).ownText().trim();
+
+                index = cAddress.indexOf('：');
+
+                if (index >= 0) {
+                    cAddress = cAddress.substring(index + 1).trim();
+                } else {
+                    cAddress = "";
+                }
+
+                Elements lianXiElements = doc.select(".lianxi");
+
+                if (lianXiElements.size() < 1) {
+                    log.i("未找到 联系人信息 ,  lianXiElements.size()  < 1 , 选择器 = .lianxi" + "   url=" + url);
+                    return null;
+                }
+
+                for (int i = 0; i < lianXiElements.size(); i++) {
+                    Element element = lianXiElements.get(i);
+                    Element sourceElement = element;
+                    // QQ 相关元素
+                    Elements qqElements = element.select("p a");
+                    String html = element.html();
+                    Pattern p = Pattern.compile("\\<!--([\\s\\S.]+)--\\>");
+                    Matcher m = p.matcher(html);
+                    if (m.find()) {
+                        html = m.group(1);
+                        element = Jsoup.parse(html);
+                    }
+                    Elements lianXiInfoElements = element.select(".telbtn");
+                    String tempContactName = "无";
+                    String tempPhone = "无";
+                    if (lianXiInfoElements.size() < 1) {
+                        tempContactName = sourceElement.child(0).ownText().trim();
+                        index = tempContactName.indexOf('：');
+                        if (index >= 0) {
+                            tempContactName = tempContactName.substring(index + 1).trim();
+                            tempContactName = tempContactName.trim();
+                        } else {
+                            tempContactName = "无";
+                        }
+                        tempPhone = sourceElement.child(1).text().trim();
+                        index = tempPhone.indexOf('：');
+                        if (index >= 0) {
+                            tempPhone = tempPhone.substring(index + 1).trim();
+                        } else {
+                            tempPhone = "无";
+                        }
+                        tempPhone = tempPhone.replaceAll("-", "");
+                    } else {
+                        Element lianXiElement = lianXiInfoElements.get(0);
+                        tempContactName = lianXiElement.attr("data-contact").trim();
+                        if (tempContactName.length() < 1) tempContactName = "无";
+                        tempPhone = lianXiElement.attr("data-tel").trim();
+                        if (tempPhone.length() < 1) tempPhone = "无";
+                    }
+                    String tempQq = "无";
+                    if (qqElements.size() > 0) {
+                        String qqHref = qqElements.get(0).attr("href");
+                        // 匹配顶级分类级别1的ID
+                        try {
+                            String regex = "uin=(\\d+)&";
+                            Pattern pattern = Pattern.compile(regex);
+                            Matcher matcher = pattern.matcher(qqHref);
+                            if (matcher.find()) {
+                                tempQq = matcher.group(1);
+                            }
+                        } catch (Exception e) {
+                            String str = HttpUtils.errorStringNoBody(responseWrap);
+                            log.e(str, e);
+                        }
+                    }
+                    cContactName += tempContactName;
+                    cPhone += tempPhone;
+                    qq += tempQq;
+
+                    if (i < lianXiElements.size() - 1) {
+                        cContactName += ",";
+                        cPhone += ",";
+                        qq += ",";
+                    }
+
+                }
+
+                companyInfo = new CompanyInfo(IDUtils.genId(platform, _id), _id, cName, cContactName, mobile, cPhone, qq, cAddress);
+
+            } catch (Exception e) {
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(e.getMessage() + "\n" + str, e);
+
             }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } else {
+            String str = HttpUtils.errorString(responseWrap);
+            log.e(str, responseWrap.e);
         }
 
         return companyInfo;

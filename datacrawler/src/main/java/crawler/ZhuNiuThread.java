@@ -6,19 +6,15 @@ import bean.ProduceInfo;
 import cache.CompanyCache;
 import com.google.gson.Gson;
 import dao.BaseDao;
-import http.HttpUtils;
 import services.ZhuNiuBaseService;
 import utils.LogUtils;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * 筑牛网抓取程序
  */
 public class ZhuNiuThread implements Runnable {
-
-
     LogUtils log = new LogUtils(ZhuNiuBaseService.platform, ZhuNiuThread.class);
 
     private ZhuNiuBaseService baseService = new ZhuNiuBaseService();
@@ -27,21 +23,27 @@ public class ZhuNiuThread implements Runnable {
 
     @Override
     public void run() {
-        baseService.requestCategory("2");
-        while (true)
-            crawler();
+        boolean first = true;
+        System.out.println(first);
+        while (true) {
+            baseService.requestCategory("2");
+            crawler(first);
+            first = false;
+        }
     }
 
 
-    public void crawler() {
+    public void crawler(boolean first) {
         Integer maxPage = 9999999;
 
         int currentPage = 1;
 
-        // 从数据库里查询最大页数 - 5 为当前页
-        int dbMaxPage = baseDao.produceMaxPage(ZhuNiuBaseService.platform);
+        if (first) {
+            // 从数据库里查询最大页数 - 5 为当前页
+            int dbMaxPage = baseDao.produceMaxPage(ZhuNiuBaseService.platform);
+            currentPage = dbMaxPage - 2;
+        }
 
-        currentPage = dbMaxPage - 2;
 
         if (currentPage < 1) {
             currentPage = 1;

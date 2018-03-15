@@ -89,7 +89,7 @@ public class ZhuNiuBaseService {
             } else {
                 // 记录错误日志
                 String str = " css 选择 .p-list.clearfix table tr td , 找到的标签数量 < 2 , size = " + tdElements.size();
-                log.e(str, responseWrap.e);
+                log.e(str + "\n" + HttpUtils.errorStringNoBody(responseWrap), responseWrap.e);
             }
 
         } else {
@@ -134,6 +134,7 @@ public class ZhuNiuBaseService {
                 if (tdElements.size() > 1) {
                     Element td = tdElements.get(1);
                     String css_class = td.attr("class").trim();
+
                     if ("type".equals(css_class)) {
                         // 说明这个分类已经到底了，属于最底层分类，具有规格型号
                         parent.setC_islow(1);
@@ -172,13 +173,17 @@ public class ZhuNiuBaseService {
                 } else {
                     // 记录失败日志
                     String str = " css 选择 .p-list.clearfix table tr td, 找到的标签数量 < 2 , size = " + tdElements.size();
-                    log.e(str, responseWrap.e);
+                    log.e(str + "\n" + HttpUtils.errorStringNoBody(responseWrap), responseWrap.e);
                 }
 
             } else {
                 // 记录失败日志
                 String str = " css 选择 .p-list.clearfix table, 找到的标签数量 < 1 ";
-                log.e(str, responseWrap.e);
+                log.e(str + "\n" + HttpUtils.errorStringNoBody(responseWrap), responseWrap.e);
+
+                // 说明这个分类已经到底了，属于最底层分类，并且没有规格型号
+                parent.setC_islow(1);
+                return;
             }
 
         } else {
@@ -237,8 +242,11 @@ public class ZhuNiuBaseService {
                         typeValue.set_id(IDUtils.genId(platform, a.attr("data-info").trim()));
                         typeValue.settValue(a.text().trim());
                         typeValue.setTypeNameId(_id);
-                        baseDao.typeValueReplace(typeValue);
-                        log.i("值 = " + typeValue.gettValue());
+
+                        if (typeValue.gettValue().length() <= 150) {
+                            baseDao.typeValueReplace(typeValue);
+                            log.i("值 = " + typeValue.gettValue());
+                        }
                     }
                 }
 

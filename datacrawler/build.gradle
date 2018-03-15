@@ -39,7 +39,7 @@ jar {
     baseName 'lezhu_crawler'
     
     manifest {
-        attributes 'Main-Class': 'App'
+        attributes 'Main-Class': 'main.App'
         attributes 'Class-Path': someString
     }
 }
