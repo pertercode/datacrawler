@@ -23,13 +23,8 @@ public class ZhuNiuThread implements Runnable {
 
     @Override
     public void run() {
-        boolean first = true;
-        System.out.println(first);
-        while (true) {
-            baseService.requestCategory("2");
-            crawler(first);
-            first = false;
-        }
+        baseService.requestCategory("2");
+        crawler(true);
     }
 
 

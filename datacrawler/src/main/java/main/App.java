@@ -1,6 +1,7 @@
 package main;
 
 import crawler.EJianLianThread;
+import crawler.HuiCongWangThread;
 import crawler.YunZhuShangChengThread;
 import crawler.ZhuNiuThread;
 import org.apache.log4j.FileAppender;
@@ -32,12 +33,12 @@ public class App {
                 eJianLian();
             } else if ("yunzhushangcheng".equals(platform.trim())) {
                 yunzhushangcheng();
+            } else if ("huicong".equals(platform.trim())) {
+                huicong();
             }
-
         } else {
             System.err.println("请加入运行参数，以告诉程序需要抓取的平台；例如 java -jar crawler.jar zhuniu");
         }
-
     }
 
     public static void zhuNiu() {
@@ -48,7 +49,6 @@ public class App {
     public static void eJianLian() {
         EJianLianThread thread = new EJianLianThread();
         thread.run();
-
     }
 
     public static void yunzhushangcheng() {
@@ -56,8 +56,9 @@ public class App {
         thread.run();
     }
 
-    public static void alibaba() {
-        YunZhuShangChengThread thread = new YunZhuShangChengThread();
+    public static void huicong() {
+        HuiCongWangThread thread = new HuiCongWangThread();
         thread.run();
     }
+
 }

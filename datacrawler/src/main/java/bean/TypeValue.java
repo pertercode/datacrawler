@@ -7,6 +7,7 @@ public class TypeValue {
     private String _id;
     private String tValue;
 
+    private String categoryId;
     private String typeNameId;
 
     public String get_id() {
@@ -25,6 +26,14 @@ public class TypeValue {
         this.tValue = tValue;
     }
 
+    public String getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
+    }
+
     public String getTypeNameId() {
         return typeNameId;
     }
@@ -36,9 +45,10 @@ public class TypeValue {
     public TypeValue() {
     }
 
-    public TypeValue(String _id, String tValue, String typeNameId) {
+    public TypeValue(String _id, String tValue, String categoryId, String typeNameId) {
         this._id = _id;
         this.tValue = tValue;
+        this.categoryId = categoryId;
         this.typeNameId = typeNameId;
     }
 }

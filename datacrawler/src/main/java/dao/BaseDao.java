@@ -213,6 +213,22 @@ public class BaseDao {
         }
     }
 
+    public void typeNameDelete(String categoryId) {
+        SqlSession sqlSession = null;
+        try {
+            sqlSession = MyBatisUtils.openSession(false);
+            BaseMapper mapper = sqlSession.getMapper(BaseMapper.class);
+            mapper.typeNameDelete(categoryId);
+            sqlSession.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e.getMessage(), e);
+            sqlSession.rollback();
+        } finally {
+            MyBatisUtils.closeSession(sqlSession);
+        }
+    }
+
     //型号值
     public void typeValueReplace(TypeValue typeValue) {
         SqlSession sqlSession = null;
@@ -220,6 +236,22 @@ public class BaseDao {
             sqlSession = MyBatisUtils.openSession(false);
             BaseMapper mapper = sqlSession.getMapper(BaseMapper.class);
             mapper.typeValueReplace(typeValue);
+            sqlSession.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e.getMessage(), e);
+            sqlSession.rollback();
+        } finally {
+            MyBatisUtils.closeSession(sqlSession);
+        }
+    }
+
+    public void typeValueDelete(String categoryId) {
+        SqlSession sqlSession = null;
+        try {
+            sqlSession = MyBatisUtils.openSession(false);
+            BaseMapper mapper = sqlSession.getMapper(BaseMapper.class);
+            mapper.typeValueDelete(categoryId);
             sqlSession.commit();
         } catch (Exception e) {
             e.printStackTrace();

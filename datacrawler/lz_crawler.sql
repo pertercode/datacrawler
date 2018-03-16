@@ -83,6 +83,7 @@ DROP TABLE IF EXISTS `crawler_typevalue`;
 CREATE TABLE `crawler_typevalue` (
   `_id` VARCHAR(200) NOT NULL COMMENT '数据ID',
   `tvalue` VARCHAR(255) DEFAULT '' COMMENT '规格值',
+  `t_category` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '规格值所属分类ID',
   `t_typename` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '规格名称ID',
   PRIMARY KEY (`_id`)
 ) ENGINE=INNODB DEFAULT CHARSET=utf8;

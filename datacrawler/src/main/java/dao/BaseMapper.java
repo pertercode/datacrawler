@@ -30,12 +30,19 @@ public interface BaseMapper {
 
     int produceMaxPage(@Param("platform") String platform);
 
-    int produceMaxPageByCategory(@Param("platform") String platform ,@Param("categoryId") String categoryId);
-
+    int produceMaxPageByCategory(@Param("platform") String platform, @Param("categoryId") String categoryId);
 
     //   ////  规格型号
     void typeNameReplace(@Param("typeName") TypeName typeName);
 
+    // 根据类型ID删除规格型号值
+    void typeNameDelete(@Param("categoryId") String categoryId);
+
+
     void typeValueReplace(@Param("typeValue") TypeValue typeValue);
+
+    // 根据规格型号 删除规格型号值
+    void typeValueDelete(@Param("categoryId") String categoryId);
+
 
 }

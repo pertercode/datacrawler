@@ -124,7 +124,6 @@ public class HttpUtils {
     public static synchronized ResponseWrap retryHttpNoProxy(Request request, String charset) {
         ResponseWrap responseWrap = new ResponseWrap();
         for (int i = 0; i < retry_count; i++) {
-
             Call call = clientNoProxy().newCall(request);
             try {
                 responseWrap.response = call.execute();

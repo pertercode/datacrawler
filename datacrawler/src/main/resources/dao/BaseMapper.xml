@@ -4,14 +4,14 @@
 <mapper namespace="dao.BaseMapper">
 
     <resultMap id="Category" type="bean.Category">
-        <id property="_id" column="_id" />
-        <result property="c_id" column="c_id" />
-        <result property="c_name" column="c_name" />
-        <result property="c_level" column="c_level" />
-        <result property="c_islow" column="c_islow" />
-        <result property="c_parent" column="c_parent" />
+        <id property="_id" column="_id"/>
+        <result property="c_id" column="c_id"/>
+        <result property="c_name" column="c_name"/>
+        <result property="c_level" column="c_level"/>
+        <result property="c_islow" column="c_islow"/>
+        <result property="c_parent" column="c_parent"/>
     </resultMap>
-    
+
     <select id="categoryCount" resultType="integer">
         SELECT COUNT(_ID) FROM `lz_crawler`.`crawler_category` WHERE c_name = #{cname}
     </select>
@@ -30,7 +30,7 @@
         REPLACE INTO `lz_crawler`.`crawler_category` (`_id`, `c_id`, `c_name`, `c_level`, `c_islow`, `c_parent`)
         VALUES
 
-        <foreach collection="list" item="item" index="index" separator="," >
+        <foreach collection="list" item="item" index="index" separator=",">
             (#{item._id}, #{item.c_id}, #{item.c_name}, #{item.c_level}, #{item.c_islow}, #{item.c_parent})
         </foreach>
     </insert>
@@ -47,7 +47,7 @@
         SELECT ifnull(MAX(p_page),1) FROM crawler_produce WHERE  left(_id, length('${platform}') )='${platform}'
     </select>
 
-    <select id="produceMaxPageByCategory"  resultType="integer">
+    <select id="produceMaxPageByCategory" resultType="integer">
         SELECT ifnull(MAX(p_page),1) FROM crawler_produce WHERE  left(_id, length('${platform}') )='${platform}' AND p_category = #{categoryId}
     </select>
 
@@ -67,9 +67,18 @@
         VALUES (#{typeName._id},  #{typeName.tName},#{typeName.categoryId});
     </insert>
 
+    <delete id="typeNameDelete" parameterType="string">
+        DELETE  FROM crawler_typename WHERE T_CATEGORY = #{categoryId}
+    </delete>
+
     <insert id="typeValueReplace" parameterType="bean.TypeValue">
-        REPLACE INTO `lz_crawler`.`crawler_typevalue` (`_id`, `tvalue`, `t_typename`)
-        VALUES (#{typeValue._id}, #{typeValue.tValue}, #{typeValue.typeNameId});
+        REPLACE INTO `lz_crawler`.`crawler_typevalue` (`_id`, `tvalue`, `t_category` ,  `t_typename`)
+        VALUES (#{typeValue._id}, #{typeValue.tValue},  #{typeValue.categoryId} ,#{typeValue.typeNameId});
     </insert>
+
+    <delete id="typeValueDelete" parameterType="string">
+        DELETE  FROM crawler_typevalue WHERE t_category = #{categoryId}
+    </delete>
+
 
 </mapper>

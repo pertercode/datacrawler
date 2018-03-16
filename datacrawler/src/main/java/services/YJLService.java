@@ -31,7 +31,8 @@ public class YJLService {
 
     private BaseDao baseDao = new BaseDao();
 
-    public List<Category> lowest = new ArrayList<Category>();
+    // 最低级的分类
+    public List<Category> categories = new ArrayList<Category>();
 
 
     /**
@@ -40,8 +41,9 @@ public class YJLService {
      * @return
      */
     public void requestCategory() {
+        // 清空最低级分类
+        categories.clear();
         String url = "http://ejianlian.com/Home/Goods/productlist/";
-
         final Request request = new Request.Builder()
                 .headers(HttpUtils.getCommonHeaders())
                 .header("Referer", BASE_URL)
@@ -54,26 +56,27 @@ public class YJLService {
             try {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
                 Elements categoryElements = doc.select(".tabbg-subject a");
-
-                // 清空最低级分类
-                lowest.clear();
-
                 for (int i = 0; i < categoryElements.size(); i++) {
                     Element categoryElement = categoryElements.get(i);
                     // 连接
                     String href = BASE_URL.substring(0, BASE_URL.length() - 1) + categoryElement.attr("href").trim();
                     String cName = categoryElement.text().trim();
                     String cid = IDUtils.uuid();
-                    Pattern pattern = Pattern.compile("cat_id/(\\d+)/");
-                    Matcher matcher = pattern.matcher(href);
-                    if (matcher.find()) {
-                        cid = matcher.group(1);
-                    }
-                    String c_url = "http://ejianlian.com/Home/Goods/productlist/cat_id/" + cid + "/";
+
+                    int index = href.indexOf("cat_id");
+
+                    cid = href.substring(index);
+
+                    String c_url = "http://ejianlian.com/Home/Goods/productlist/" + cid;
+
                     Category category = new Category(IDUtils.genId(platform, cid), platform, cid, cName, 0, 0, "0");
                     category.setC_url(c_url);
                     requestChildCategory(category);
                     baseDao.categoryReplace(category);
+
+                    if (categories.size() > 0) {
+                        return;
+                    }
 
                 }
             } catch (Exception e) {
@@ -117,7 +120,7 @@ public class YJLService {
                     if (liElements.size() < 1) {
                         // 没有子分类了
                         parent.setC_islow(1);
-                        lowest.add(parent);
+                        categories.add(parent);
                         return;
                     }
 
@@ -135,45 +138,39 @@ public class YJLService {
 
                         String cid = IDUtils.uuid();
 
-                        if (parent.getC_level() == 0) {
-                            cid = a.attr("href").split("/")[7];
+                        if (index == 0) {
+                            String href = a.attr("href").trim();
+                            int cat_idIndex = href.indexOf("cat_id");
+                            cid = href.substring(cat_idIndex);
                         } else {
-                            cid = a.attr("onclick").split(",")[1].split("\\)")[0];
+                            String onclick = a.attr("onclick").trim();
+
+                            String regexp = "goto\\('(.+)',(\\d+)\\)";
+
+                            Pattern pattern = Pattern.compile(regexp);
+
+                            Matcher matcher = pattern.matcher(onclick);
+
+                            if (matcher.find()) {
+                                String tag = matcher.group(1);
+                                String id = matcher.group(2);
+                                cid = parent.getC_id() + tag + "/" + id + "/";
+                            }
                         }
 
-                        String cUrl = BASE_URL.substring(0, BASE_URL.length() - 1) + a.attr("href").trim();
-
-                        Pattern pattern = Pattern.compile("breed_1/(\\d+)/");
-
-                        Matcher matcher = pattern.matcher(cUrl);
-
-                        if (matcher.find()) {
-                            cid = matcher.group(1);
-                        }
-
+                        String cUrl = BASE_URL + "Home/Goods/productlist/" + cid;
                         Category category = new Category(IDUtils.genId(platform, cid), platform, cid, cName, parent.getC_level() + 1, 0, parent.get_id());
-
-                        if (category.getC_level() == 1) {
-                            cUrl = parent.getC_url() + "breed_1/" + category.getC_id() + "/";
-                        } else if (category.getC_level() == 2) {
-                            cUrl = parent.getC_url() + "subbreed_2/" + category.getC_id() + "/";
-                        } else {
-                            cUrl = parent.getC_url() + "subbreed_3/" + category.getC_id() + "/";
-                        }
                         category.setC_url(cUrl);
-
-                        log.i("cid = " + cid + " , cName = " + cName + " ,  parentTypeId = " + parent.get_id() + "  , parentTypeName = " + parent.getC_name() + " , url = " + cUrl);
-
-                        //getType(category);
-
+                        getType(category);
                         requestChildCategory(category);
+                        log.i("cid = " + cid + " , cName = " + cName + " ,  parentTypeId = " + parent.get_id() + "  , parentTypeName = " + parent.getC_name() + " , url = " + cUrl);
                         baseDao.categoryReplace(category);
 
                     }
                 } else {
                     // 没有子分类了
                     parent.setC_islow(1);
-                    lowest.add(parent);
+                    categories.add(parent);
                     return;
                 }
             } catch (Exception e) {
@@ -192,7 +189,6 @@ public class YJLService {
      * 查询型号
      */
     public void getType(Category category) {
-
         // 把URL创建好了
         Request request = new Request.Builder().url(category.getC_url()).headers(HttpUtils.getCommonHeaders()).build();
 
@@ -204,31 +200,34 @@ public class YJLService {
                 Document doc = Jsoup.parse(body);
                 Elements elements = doc.select("#material");
                 if (elements.size() > 0) {
+
+                    // 根据类型 ID删除规格型号名称和值
+                    baseDao.typeNameDelete(category.get_id());
+                    baseDao.typeValueDelete(category.get_id());
+
                     for (int i = 0; i < elements.size(); i++) {
                         Element type = elements.get(i).select("dt").get(0).select("span").get(0);
-                        TypeName typeName = new TypeName();
-                        typeName.settName(type.text().trim().split("：")[0]);
-                        typeName.set_id(IDUtils.genId(platform, typeName.gettName() + "_" + category.getC_id()));
-                        typeName.setCategoryId(category.get_id());
-                        baseDao.typeNameReplace(typeName);
 
-                        log.i("规格 = " + typeName);
+                        String _id = IDUtils.uuid();
+
+                        String tName = type.text().trim().split("：")[0];
+
+                        TypeName typeName = new TypeName(_id, tName, category.get_id());
+                        baseDao.typeNameReplace(typeName);
+                        log.i("规格 = " + typeName.gettName());
 
                         Elements value = elements.get(i).select("dd .listitem").get(0).select("li");
                         for (int j = 0; j < value.size(); j++) {
                             Element a = value.get(j).select("a").get(0);
-                            TypeValue typeValue = new TypeValue();
+
                             String id = a.attr("onclick");
                             String vid = id.split(",")[1].split("'")[1];
-                            typeValue.set_id(IDUtils.genId(platform, vid));
-                            typeValue.settValue(a.text().trim());
-                            typeValue.setTypeNameId(typeName.get_id());
 
+                            TypeValue typeValue = new TypeValue(IDUtils.genId(platform, vid), a.text().trim(), category.get_id(), typeName.get_id());
 
                             if (typeValue.gettValue().length() < 200) {
                                 baseDao.typeValueReplace(typeValue);
                                 log.i("值 = " + typeValue.gettValue());
-
                             }
                         }
                     }
@@ -261,8 +260,10 @@ public class YJLService {
         if (page == null)
             page = 1;
 
-        String url = category.getC_url() + "/p/" + page + "/sort/2";
+        String url = category.getC_url() + "/p/" + page + "/sort/2/";
         Integer totalPage = null;
+
+        System.out.println(url);
 
         final Request request = new Request.Builder()
                 .headers(HttpUtils.getCommonHeaders())
@@ -436,9 +437,7 @@ public class YJLService {
         if (responseWrap.isSuccess()) {
             try {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
-
                 String _id = doc.getElementById("sid").val().trim();
-
                 Elements companyInfoElements = doc.select(".option-default.clearfix td");
                 String cName = "";
                 String mobile = "";
@@ -461,18 +460,17 @@ public class YJLService {
                         if (doc.select(".lxrul").get(0).select("a").size() > 0) {
                             String href = doc.select(".lxrul").get(0).select("a").attr("href");
                             qq = href.split("uin=")[1].split("&")[0];
-                            System.out.println(qq);
                         }
                         companyInfo = new CompanyInfo(IDUtils.genId(platform, _id), _id, cName, cContactName, mobile, cPhone, qq, cAddress);
                         return companyInfo;
                     } else {
-                        throw new RuntimeException("未找到 企业信息 , companyInfoElements.size()  < 1 , 选择器 = .option-default.clearfix td  url = " + url);
+                        throw new RuntimeException("未找到 企业信息 , companyInfoElements.size()  < 1 " + url);
                     }
                 }
                 Elements companyInfoChildElements = companyInfoElements.get(0).children();
 
                 if (companyInfoChildElements.size() < 1)
-                    throw new RuntimeException("未找到 企业信息 ,  companyInfoChildElements.size()  < 1 , 选择器 = .option-default.clearfix td  url = " + url);
+                    throw new RuntimeException("未找到 企业信息 ,  companyInfoChildElements.size()  < 1 ");
 
                 // 企业名称
                 cName = companyInfoChildElements.get(0).ownText().trim();

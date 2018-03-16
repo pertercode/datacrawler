@@ -1,21 +1,23 @@
-import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile;
+import crawler.GCWThread;
+import crawler.HuiCongWangThread;
 import http.HttpUtils;
 import okhttp3.Request;
 import org.jsoup.Jsoup;
-import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.junit.Test;
 import utils.IDUtils;
 
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Tester {
-
+    @Test
+    public void test(){
+        GCWThread thread=new GCWThread();
+        thread.run();
+    }
     @Test
     public void testYJLProduces() {
 //        String url = "http://13328456247.huamu.com/special/contact.html" ;
@@ -204,8 +206,14 @@ public class Tester {
             }
 
         }
-
         return phone;
+    }
+
+
+
+    public void TestHuiCong(){
+        HuiCongWangThread huiCongWangThread=new HuiCongWangThread();
+        huiCongWangThread.run();
     }
 
 }
