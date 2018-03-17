@@ -12,6 +12,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import utils.IDUtils;
 import utils.LogUtils;
+import utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,11 +74,6 @@ public class YJLService {
                     category.setC_url(c_url);
                     requestChildCategory(category);
                     baseDao.categoryReplace(category);
-
-                    if (categories.size() > 0) {
-                        return;
-                    }
-
                 }
             } catch (Exception e) {
                 // 记录失败日志
@@ -497,9 +493,19 @@ public class YJLService {
 
                 Elements lianXiElements = doc.select(".lianxi");
 
+                // 未找到联系人则从左侧窗口读取联系人信息
                 if (lianXiElements.size() < 1) {
-                    log.i("未找到 联系人信息 ,  lianXiElements.size()  < 1 , 选择器 = .lianxi" + "   url=" + url);
-                    return null;
+                    String phone = "";
+
+                    Elements elements = doc.select(".telbtn");
+                    if (elements.size() > 0) {
+                        phone = elements.get(0).attr("data-tel").trim();
+                    }
+                    if (StringUtils.isEmpty(phone))
+                        return null;
+                    if (StringUtils.isEmpty(cContactName)) cContactName = cName;
+                    companyInfo = new CompanyInfo(IDUtils.genId(platform, _id), _id, cName, cContactName, mobile, cPhone, qq, cAddress);
+                    return companyInfo;
                 }
 
                 for (int i = 0; i < lianXiElements.size(); i++) {
@@ -574,7 +580,6 @@ public class YJLService {
             } catch (Exception e) {
                 String str = HttpUtils.errorStringNoBody(responseWrap);
                 log.e(e.getMessage() + "\n" + str, e);
-
             }
         } else {
             String str = HttpUtils.errorString(responseWrap);

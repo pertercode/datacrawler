@@ -23,6 +23,7 @@ public class EJianLianThread implements Runnable {
     @Override
     public void run() {
         crawler();
+        log.e("抓取完成.. ", null);
     }
 
     public void crawler() {

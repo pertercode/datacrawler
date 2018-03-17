@@ -23,14 +23,11 @@ public class YunZhuShangChengThread implements Runnable {
 
     @Override
     public void run() {
-        boolean first = true;
-        while (true) {
-            crawler(first);
-            first = false;
-        }
+        crawler();
+        log.e("抓取完成.. ", null);
     }
 
-    public void crawler(boolean first) {
+    public void crawler() {
         List<Category> categories = baseService.requestCategory();
         if (categories != null && categories.size() > 0) {
             for (int i = 0; i < categories.size(); i++) {
@@ -38,11 +35,9 @@ public class YunZhuShangChengThread implements Runnable {
                 baseService.requestTypeName(category);
                 Integer maxPage = 0;
                 int currentPage = 1;
-                if (first) {
-                    // 从数据库里查询最大页数 - 5 为当前页
-                    int dbMaxPage = baseDao.produceMaxPage(YunZhuService.platform, category.get_id());
-                    currentPage = dbMaxPage - 2;
-                }
+                // 从数据库里查询最大页数 - 5 为当前页
+                int dbMaxPage = baseDao.produceMaxPage(YunZhuService.platform, category.get_id());
+                currentPage = dbMaxPage - 2;
                 if (currentPage < 1) {
                     currentPage = 1;
                 }

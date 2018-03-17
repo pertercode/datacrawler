@@ -4,7 +4,10 @@ import com.yunpian.sdk.model.Result;
 import shop.lezhu.crawler.bean.CompanyInfoBean;
 import shop.lezhu.crawler.bean.SearchBean;
 import shop.lezhu.crawler.services.CompanyInfoService;
-import shop.lezhu.crawler.utils.*;
+import shop.lezhu.crawler.utils.ConfigUtils;
+import shop.lezhu.crawler.utils.LogUtils;
+import shop.lezhu.crawler.utils.StringUtils;
+import shop.lezhu.crawler.utils.YunPianSmsUtils;
 import shop.lezhu.crawler.view.MainForm;
 
 import java.awt.event.ActionEvent;
@@ -24,53 +27,87 @@ public class Main {
     static boolean searching = false;
 
     // 队列： 存储待爬虫去爬得关键词队列
-    final static BlockingQueue<SearchBean> cacheQueue = new ArrayBlockingQueue<SearchBean>(
+    public final static BlockingQueue<SearchBean> cacheQueue = new ArrayBlockingQueue<SearchBean>(
             9999);
 
     /**
      * 线程： 从服务器读取待爬虫爬得关键词，并且存入队列
      */
-    public static class ReadKeyRunnable implements Runnable {
-        final CompanyInfoService service = new CompanyInfoService();
-
-        @Override
-        public void run() {
-            mainForm.printLog("开始从 " + ConfigUtils.getApi() + " 轮训 搜索关键词! ");
-
-            while (!isStop) {
-
-                // 如果爬虫没有在搜索,则加入新得关键词
-                if (!Main.searching) {
-
-                    List<SearchBean> searchBeans = service.requestSearchBeans();
-
-                    for (int i = 0; i < searchBeans.size(); i++) {
-                        SearchBean bean = searchBeans.get(i);
-                        if (bean != null) {
-                            if (bean.canSearch()) {
-                                cacheQueue.add(bean);
-
-                                // 设置关键词抓取完成
-                                service.setExecute(bean);
-                            }
-                        }
-                    }
-
-                    if (!isStop) {
-                        // 5S 请求一次
-                        try {
-                            Thread.sleep(5 * 1000);
-                        } catch (InterruptedException e) {
-                            break;
-                        }
-                    }
-
-                    if (isStop) break;
-                }
-            }
-            mainForm.printLog("警告： 已停止从 " + ConfigUtils.getApi() + " 轮训 搜索关键词! ");
-        }
-    }
+//    public static class ReadKeyRunnable implements Runnable {
+//        final CompanyInfoService service = new CompanyInfoService();
+//
+//        @Override
+//        public void run() {
+////            mainForm.printLog("开始从 " + ConfigUtils.getApi() + " 轮训 搜索关键词! ");
+//
+////            while (!isStop) {
+////
+////                // 如果爬虫没有在搜索,则加入新得关键词
+////                if (!Main.searching) {
+////
+////                    List<SearchBean> searchBeans = service.requestSearchBeans();
+////
+////                    for (int i = 0; i < searchBeans.size(); i++) {
+////                        SearchBean bean = searchBeans.get(i);
+////                        if (bean != null) {
+////                            if (bean.canSearch()) {
+////                                cacheQueue.add(bean);
+////
+////                                // 设置关键词抓取完成
+////                                service.setExecute(bean);
+////                            }
+////                        }
+////                    }
+////
+////                    if (!isStop) {
+////                        // 5S 请求一次
+////                        try {
+////                            Thread.sleep(3 * 1000);
+////                        } catch (InterruptedException e) {
+////                            break;
+////                        }
+////                    }
+////
+////                    if (isStop) break;
+////                }
+////            }
+//            mainForm.printLog("开始等待任务...");
+//
+//            while (!isStop) {
+////
+//                // 如果爬虫没有在搜索,则加入新得关键词
+//                if (!Main.searching) {
+//
+//                    List<SearchBean> searchBeans = service.requestSearchBeans();
+//
+//                    for (int i = 0; i < searchBeans.size(); i++) {
+//                        SearchBean bean = searchBeans.get(i);
+//                        if (bean != null) {
+//                            if (bean.canSearch()) {
+//                                cacheQueue.add(bean);
+//
+//                                // 设置关键词抓取完成
+//                                service.setExecute(bean);
+//                            }
+//                        }
+//                    }
+//
+//                    if (!isStop) {
+//                        // 5S 请求一次
+//                        try {
+//                            Thread.sleep(3 * 1000);
+//                        } catch (InterruptedException e) {
+//                            break;
+//                        }
+//                    }
+//
+//                    if (isStop) break;
+//                }
+//            }
+//
+//            mainForm.printLog("任务已停止...");
+//        }
+//    }
 
 
     // 主窗口程序
@@ -78,7 +115,7 @@ public class Main {
 
     public static String BASE_PATH = null;
 
-    private static Thread readKeysThread = null;
+//    private static Thread readKeysThread = null;
 
 
     /**
@@ -108,8 +145,8 @@ public class Main {
         mainForm = new MainForm();
         mainForm.onCreate();
 
-        final ReadKeyRunnable readKeyRunnable = new ReadKeyRunnable();
-        readKeysThread = new Thread(readKeyRunnable);
+//        final ReadKeyRunnable readKeyRunnable = new ReadKeyRunnable();
+//        readKeysThread = new Thread(readKeyRunnable);
 
 
         ActionListener actionListener = new ActionListener() {
@@ -123,15 +160,17 @@ public class Main {
                     mainForm.btnStop.setEnabled(true);
 
                     // 启动线程，获取待搜索得 key
-                    if (!readKeysThread.isAlive() || !readKeysThread.isInterrupted()) {
-                        readKeysThread = null;
-                        readKeysThread = new Thread(readKeyRunnable);
-                        readKeysThread.start();
-                    }
+//                    if (!readKeysThread.isAlive() || !readKeysThread.isInterrupted()) {
+//                        readKeysThread = null;
+//                        readKeysThread = new Thread(readKeyRunnable);
+//                        readKeysThread.start();
+//                    }
                 } else if (e.getSource() == mainForm.btnStop) {
                     // 停止
                     Main.isStop = true;
-                    readKeysThread.interrupt();
+                    Main.cacheQueue.clear();
+                    mainForm.refreshQueueCount();
+//                    readKeysThread.interrupt();
                     mainForm.btnStop.setEnabled(false);
 
                     stop();
@@ -146,16 +185,21 @@ public class Main {
         while (true) {
             if (!isStop) {
                 try {
-                    SearchBean bean = cacheQueue.take();
+                    SearchBean bean = cacheQueue.poll();
 
                     if (bean != null) {
-                        search(bean, bean.getKey(), bean.getLocation());
+                        search(bean, bean.getKeyword(), bean.getRegion());
+
+                        mainForm.refreshQueueCount();
+
                         try {
-                            Thread.sleep(10 * 1000);
+                            Thread.sleep(3 * 1000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
+
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -171,6 +215,9 @@ public class Main {
      * @param location : 位置信息
      */
     public static void search(SearchBean searchBean, String key, String location) {
+
+        if (searchBean == null || StringUtils.isEmpty(key) || StringUtils.isEmpty(searchBean.getKeyword())) return;
+
         searching = true;
 
         // 发送商家
@@ -232,13 +279,19 @@ public class Main {
                         // 发送短信
                         String msg = ConfigUtils.getMsgTpl();
 
-                        msg = msg.replace("#ContactsName#", infoBean.getContactsName())
-                                .replace("#key#", infoBean.getKey())
-                                .replace("#goods#", infoBean.getKey())
-                                .replace("#duty#", infoBean.getDuty())
-                                .replace("#male#", infoBean.getMale())
-                                .replace("#areaName#", infoBean.getAreaName());
+                        // 购买信息
+                        String buyInfo = searchBean.getGoods_name();
 
+
+                        String url = "http://www.lezhu.shop/" + "u/" + searchBean.getId() + "/";
+
+
+                        msg = msg.replace("#company#", searchBean.getCompany())
+                                .replace("#buyInfo#", buyInfo)
+                                .replace("#phone#", searchBean.getContact_phone())
+                                .replace("#url#", url);
+
+                        System.out.println(msg);
 
                         Result result = null;
 
@@ -246,18 +299,17 @@ public class Main {
 
                         if (ConfigUtils.isDebug()) {
 
-//                            long t = System.currentTimeMillis();
-//                            if (t % 2 == 0) {
-//                                phone = "15268156868";
-//                            } else if (t % 3 == 0) {
-//                                phone = "18118552760";
-//                            } else if (t % 5 == 0) {
-//                                phone = "15062199967";
-//                            } else {
-//                                phone = "18796213142";
-//                            }
-
-                            phone = "18796213142";
+                            long t = System.currentTimeMillis();
+                            if (t % 2 == 0) {
+                                // 曹珊
+                                phone = "18552903883";
+                            } else if (t % 3 == 0) {
+                                // 侯总
+                                phone = "15268156868";
+                            } else {
+//                                我
+                                phone = "18796213142";
+                            }
                         } else {
                             phone = infoBean.getNumber();
                         }
@@ -352,4 +404,6 @@ public class Main {
         if (isStop)
             stop();
     }
+
+
 }

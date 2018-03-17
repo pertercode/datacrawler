@@ -200,7 +200,7 @@ public class YunZhuService {
             try {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
                 String _id = doc.select(".site-menu li").get(1).select("a").get(0).attr("href");
-                _id=_id.substring(_id.lastIndexOf("/")+1);
+                _id = _id.substring(_id.lastIndexOf("/") + 1);
                 Elements companyInfoElements = doc.select(".overblock .sidebar");
                 Element companyInfoChildElements = companyInfoElements.get(0);
                 Elements p = companyInfoChildElements.select("p");
@@ -209,22 +209,22 @@ public class YunZhuService {
                 // 企业电话
                 String mobile = "";
                 // 企业地址
-                String cAddress ="";
+                String cAddress = "";
                 for (int i = 1; i < p.size(); i++) {
-                    if(p.get(i).select("label").size()>0){
-                        String text=p.get(i).select("label").get(0).text().trim();
-                        if(text.equals("电话：")){
-                            mobile=p.get(i).select("span").get(0).text().trim();
-                        }else if(text.equals("地区：")){
-                            cAddress=p.get(i).select("span").get(0).text().trim();
+                    if (p.get(i).select("label").size() > 0) {
+                        String text = p.get(i).select("label").get(0).text().trim();
+                        if (text.equals("电话：")) {
+                            mobile = p.get(i).select("span").get(0).text().trim();
+                        } else if (text.equals("地区：")) {
+                            cAddress = p.get(i).select("span").get(0).text().trim();
                         }
                     }
                 }
-                p=companyInfoChildElements.select(".connect-way p");
-                String cContactName ="";
+                p = companyInfoChildElements.select(".connect-way p");
+                String cContactName = "";
                 for (int i = 0; i < p.size(); i++) {
-                    String text=p.get(i).text();
-                    if(text.split("：")[0].equals("联系人")){
+                    String text = p.get(i).text();
+                    if (text.split("：")[0].equals("联系人")) {
                         cContactName = p.get(i).select("span").get(0).text().trim();
                     }
                 }
@@ -256,6 +256,8 @@ public class YunZhuService {
         HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
         //如果请求成功
         if (responseWrap.isSuccess()) {
+            baseDao.typeNameDelete(category.get_id());
+            baseDao.typeValueDelete(category.get_id());
             Document doc = Jsoup.parse(responseWrap.body);
             Elements elements = doc.select(".filterbox .filter-conditions");
             for (Element e : elements) {
@@ -281,6 +283,7 @@ public class YunZhuService {
                     TypeValue typeValue = new TypeValue();
                     typeValue.set_id(v_id);
                     typeValue.settValue(vName);
+                    typeValue.setCategoryId(category.get_id());
                     typeValue.setTypeNameId(typeName.get_id());
                     baseDao.typeValueReplace(typeValue);
                     log.i("规格的值入库了 , 名称 =  " + typeValue.gettValue() + "\t所属分类是：" + typeValue.getTypeNameId());

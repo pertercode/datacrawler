@@ -178,10 +178,9 @@ public class CompanyInfoService extends BaseService {
      */
     public List<SearchBean> requestSearchBeans() {
         List<SearchBean> searchBeans = new ArrayList<SearchBean>();
-        String url = ConfigUtils.getApi() + "glist";
+        String url = ConfigUtils.getApi() + "api/PromotionKeyword/glist/is_execute/-1/page/1/";
         String responseBody = null;
         try {
-
             final Request request = new Request.Builder()
                     .url(url)
                     .build();
@@ -205,38 +204,38 @@ public class CompanyInfoService extends BaseService {
     }
 
 
-    /**
-     * 将已抓取得KEY设置为已抓取状态
-     *
-     * @param bean : 搜索信息Bean
-     * @return ： 是否已设置为抓取状态
-     */
-    public boolean setExecute(SearchBean bean) {
-        boolean result = false;
-        String urlStr = ConfigUtils.getApi() + "setexecute";
-        HttpUrl url = HttpUrl.parse(urlStr).newBuilder()
-                .addQueryParameter("keyword", bean.getKey())
-                .addQueryParameter("region", bean.getLocation())
-                .addQueryParameter("company", bean.getCompany()).build();
-        try {
-            //创建一个Request
-            final Request request = new Request.Builder()
-                    .url(url)
-                    .build();
-
-            //new call
-            Call call = mOkHttpClient.newCall(request);
-
-            Response response = call.execute();
-
-            if (response.isSuccessful()) {
-                result = true;
-            }
-        } catch (IOException ex) {
-            String msg = "URL = " + url.toString();
-            Main.mainForm.printLog(msg, ex);
-        }
-        return result;
-    }
+//    /**
+//     * 将已抓取得KEY设置为已抓取状态
+//     *
+//     * @param bean : 搜索信息Bean
+//     * @return ： 是否已设置为抓取状态
+//     */
+//    public boolean setExecute(SearchBean bean) {
+//        boolean result = false;
+//        String urlStr = ConfigUtils.getApi() + "setexecute";
+//        HttpUrl url = HttpUrl.parse(urlStr).newBuilder()
+//                .addQueryParameter("keyword", bean.getKey())
+//                .addQueryParameter("region", bean.getLocation())
+//                .addQueryParameter("company", bean.getCompany()).build();
+//        try {
+//            //创建一个Request
+//            final Request request = new Request.Builder()
+//                    .url(url)
+//                    .build();
+//
+//            //new call
+//            Call call = mOkHttpClient.newCall(request);
+//
+//            Response response = call.execute();
+//
+//            if (response.isSuccessful()) {
+//                result = true;
+//            }
+//        } catch (IOException ex) {
+//            String msg = "URL = " + url.toString();
+//            Main.mainForm.printLog(msg, ex);
+//        }
+//        return result;
+//    }
 
 }

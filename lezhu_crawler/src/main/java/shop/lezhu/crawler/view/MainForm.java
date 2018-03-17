@@ -1,10 +1,16 @@
 package shop.lezhu.crawler.view;
 
+import com.google.gson.Gson;
+import okhttp3.Request;
+import shop.lezhu.crawler.Main;
+import shop.lezhu.crawler.bean.SearchBean;
+import shop.lezhu.crawler.bean.SearchJson;
+import shop.lezhu.crawler.http.HttpUtils;
+import shop.lezhu.crawler.services.CompanyInfoService;
 import shop.lezhu.crawler.utils.ConfigUtils;
 import shop.lezhu.crawler.utils.LogUtils;
 import shop.lezhu.crawler.utils.StringUtils;
 import shop.lezhu.crawler.view.widget.ImageButton;
-import sun.security.krb5.Config;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -16,6 +22,7 @@ import java.awt.event.ItemListener;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class MainForm extends JFrame implements ActionListener {
 
@@ -39,14 +46,24 @@ public class MainForm extends JFrame implements ActionListener {
 
     private JLabel jlb_location;
 
+    private JLabel jlb_queuecount_title;
+
+    private JLabel jlb_queuecount;
+
     public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
+    // 设置对话框
     private SettingDialog dialog = null;
+
+    // 录入信息对话框
+    private AddTaskDialog addTaskDialog = null;
 
 
     public JButton btnStart = null;
 
     public JButton btnStop = null;
+
+    ImageButton btnAdd = null;
 
     ImageButton btnSetting = null;
 
@@ -79,6 +96,7 @@ public class MainForm extends JFrame implements ActionListener {
         setTitle(null, null);
         setSending(null, null);
         setSendingCount(null, null);
+
 
     }
 
@@ -151,6 +169,26 @@ public class MainForm extends JFrame implements ActionListener {
         jp_head.add(jlb_location);
 
 
+        jlb_queuecount_title = new JLabel("队列 : ");
+        jlb_queuecount_title.setFont(titleFont);
+        jlb_queuecount_title.setBounds(jlb_location.getX() + jlb_location.getWidth(), 15, jlb_key_title.getWidth(), jlb_key_title.getHeight());
+        jp_head.add(jlb_queuecount_title);
+
+
+        jlb_queuecount = new JLabel("0");
+        jlb_queuecount.setFont(titleFontBold);
+        jlb_queuecount.setForeground(Color.red);
+        jlb_queuecount.setHorizontalAlignment(JLabel.LEFT);
+        jlb_queuecount.setBounds(jlb_queuecount_title.getX() + jlb_queuecount_title.getWidth(), jlb_queuecount_title.getY(), 200, jlb_key_title.getHeight());
+        jp_head.add(jlb_queuecount);
+
+        btnAdd = new ImageButton(new ImageIcon(getClass().getClassLoader().getResource("add.png")));
+        btnAdd.setLocation(this.getWidth() - btnAdd.getWidth() - 140, 5);
+        btnAdd.setToolTipText("新建任务");
+        btnAdd.addActionListener(this);
+        jp_head.add(btnAdd);
+
+
         btnOpenLog = new ImageButton(new ImageIcon(getClass().getClassLoader().getResource("log.png")));
         btnOpenLog.setLocation(this.getWidth() - btnOpenLog.getWidth() - 20, 5);
         btnOpenLog.setToolTipText("打开日志目录");
@@ -208,6 +246,75 @@ public class MainForm extends JFrame implements ActionListener {
     }
 
 
+    private CompanyInfoService service = new CompanyInfoService();
+
+    void initAddTask() {
+
+        final List<SearchBean> searchBeans = service.requestSearchBeans();
+
+        if (searchBeans != null) {
+            addTaskDialog = new AddTaskDialog(this);
+            addTaskDialog.btnOk.addActionListener(this);
+            addTaskDialog.btnCancel.addActionListener(this);
+
+            addTaskDialog.cbInfos.setVisible(searchBeans.size() > 0);
+
+            if (searchBeans.size() > 0) {
+                for (int i = 0; i < searchBeans.size(); i++) {
+                    SearchBean bean = searchBeans.get(i);
+
+                    String item = bean.getId() + "_" + bean.getBuyInfo();
+                    addTaskDialog.cbInfos.addItem(item);
+                }
+
+                SearchBean searchBean = searchBeans.get(0);
+                selectSearchBean(searchBean);
+
+                addTaskDialog.cbInfos.addItemListener(new ItemListener() {
+
+
+                    @Override
+                    public void itemStateChanged(ItemEvent e) {
+                        if (e.getStateChange() == ItemEvent.SELECTED) {
+                            int index = addTaskDialog.cbInfos.getSelectedIndex();
+                            SearchBean searchBean = searchBeans.get(index);
+                            selectSearchBean(searchBean);
+                        }
+                    }
+                });
+
+
+            }
+
+
+            addTaskDialog.setModal(true);
+            addTaskDialog.setVisible(true);
+        }
+
+
+    }
+
+    private void selectSearchBean(SearchBean searchBean) {
+        if (searchBean != null) {
+
+            // 设置ID
+
+            addTaskDialog.txtId.setText(searchBean.getId());
+
+            // 设置关键词
+            addTaskDialog.txtKey.setText(searchBean.getKeyword());
+
+            // 手机号
+            addTaskDialog.txtCPhone.setText(searchBean.getContact_phone());
+
+            // 企业名称
+            addTaskDialog.txtCInfo.setText(searchBean.getCompany());
+
+            // 购买详情
+            addTaskDialog.txtCDetail.setText(searchBean.getBuyInfo());
+        }
+    }
+
     void initSetting() {
         dialog = new SettingDialog(this);
         dialog.setSize(590, 500);
@@ -223,11 +330,11 @@ public class MainForm extends JFrame implements ActionListener {
         dialog.cbMode.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
-                if(e.getStateChange() == ItemEvent.SELECTED){
-                    int index =  dialog.cbMode.getSelectedIndex();
-                    if(index == 0){
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    int index = dialog.cbMode.getSelectedIndex();
+                    if (index == 0) {
                         dialog.txtApiUrl.setText(ConfigUtils.DEFAULT_DEBUG_BASEURL);
-                    }else if (index == 1){
+                    } else if (index == 1) {
                         dialog.txtApiUrl.setText(ConfigUtils.DEFAULT_RELEASE_BASEURL);
                     }
                 }
@@ -260,6 +367,20 @@ public class MainForm extends JFrame implements ActionListener {
     // 按钮点击
     @Override
     public void actionPerformed(ActionEvent e) {
+
+        if (e.getSource() == btnAdd) {
+            btnAdd.setEnabled(false);
+            try {
+
+                initAddTask();
+
+            } catch (Exception e1) {
+                e1.printStackTrace();
+//                printLog(e1.getMessage(), e1);
+            } finally {
+                btnAdd.setEnabled(true);
+            }
+        }
 
         if (e.getSource() == btnOpenLog) {
             btnOpenLog.setEnabled(false);
@@ -301,6 +422,57 @@ public class MainForm extends JFrame implements ActionListener {
             } else if (e.getSource() == dialog.btnCancle) {
                 dialog.dispose();
                 dialog = null;
+            }
+        }
+
+
+        if (addTaskDialog != null) {
+            if (e.getSource() == addTaskDialog.btnOk) {
+
+                String key = addTaskDialog.txtKey.getText().trim();
+
+                String region = addTaskDialog.txtLocation.getText().trim();
+
+                String cName = addTaskDialog.txtCInfo.getText().trim();
+
+                String cBuyInfo = addTaskDialog.txtCDetail.getText().trim();
+
+                String cPhone = addTaskDialog.txtCPhone.getText().trim();
+
+                String id = addTaskDialog.txtId.getText().trim();
+
+                if (StringUtils.isEmpty(id) || "ID不可以为空!!".equals(id)) {
+                    addTaskDialog.txtId.setText("ID不可以为空!!");
+                    return;
+                }
+
+
+                SearchBean searchBean = new SearchBean();
+                searchBean.setId(id);
+                searchBean.setKeyword(key);
+                searchBean.setRegion(region);
+                // 企业名称
+                searchBean.setCompany(cName);
+
+                // 联系电话
+                searchBean.setContact_phone(cPhone);
+
+                // 购买详情
+                searchBean.setGoods_name(cBuyInfo);
+                // URL
+                String shortUrl = ConfigUtils.getApi() + "u/" + searchBean.getId();
+                searchBean.setUrl(shortUrl);
+
+                Main.cacheQueue.add(searchBean);
+                refreshQueueCount();
+
+                addTaskDialog.dispose();
+                addTaskDialog = null;
+
+
+            } else if (e.getSource() == addTaskDialog.btnCancel) {
+                addTaskDialog.dispose();
+                addTaskDialog = null;
             }
         }
 
@@ -348,6 +520,13 @@ public class MainForm extends JFrame implements ActionListener {
             lbCount.setText("(" + current + "/" + count + ")");
 
         }
+    }
+
+    /**
+     * 刷新队列数量
+     */
+    public void refreshQueueCount() {
+        jlb_queuecount.setText(Main.cacheQueue.size() + "");
     }
 
 

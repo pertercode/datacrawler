@@ -9,13 +9,13 @@ import java.util.Properties;
 
 public class ConfigUtils {
 
-    private static final String DEFAULT_TPL = "【乐筑网】#ContactsName# 老板，您好，乐筑网上有客户想买您经营的[ #goods# ]，猛戳官网链接： http://www.lezhu.shop/mobile 进行报价。回T退订";
+    private static final String DEFAULT_TPL = "#company# 欲采购 #buyInfo#，联系电话 #phone#，更多采购信息，请见： #url# ";
 
-    private static final String DEFAULT_API_KEY = "5204d9a4bb06ccd6d992960b4b0535d5";
+    private static final String DEFAULT_API_KEY = "96c419beb9afd074b9ccec8e623ed3b2";
 
-    public static final String DEFAULT_DEBUG_BASEURL = "http://test.lezhu.shop/api/promotionKeyword/";
+    public static final String DEFAULT_DEBUG_BASEURL = "http://test.lezhu.shop/";
 
-    public static final String DEFAULT_RELEASE_BASEURL = "http://api.lezhu.shop/api/promotionKeyword/";
+    public static final String DEFAULT_RELEASE_BASEURL = "http://api.lezhu.shop/";
 
     private static final Boolean DEFAULT_DEBUG = true;
 

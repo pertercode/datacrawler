@@ -10,7 +10,7 @@ public class LogUtils {
 
     public LogUtils(String platform, Class clazz) {
         log = Logger.getLogger(clazz);
-        String logPath = App.BASE_PATH + "log/" + platform + "/error.log";
+        String logPath = App.BASE_PATH + "/log/" + platform + "/error.log";
         FileAppender appender = (FileAppender) log.getRootLogger().getAppender("E");
         appender.setFile(logPath);
         appender.activateOptions();

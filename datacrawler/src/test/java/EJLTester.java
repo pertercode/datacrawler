@@ -15,13 +15,9 @@ import utils.StringUtils;
 public class EJLTester {
 
 
-
     @Test
     public void runTester() {
-        YJLService service = new YJLService() ;
-        service.requestCompany("http://shop3364.ejianlian.com/contact/");
     }
-
 
 
 }
