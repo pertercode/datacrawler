@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import dao.BaseDao;
 import http.HttpUtils;
 import okhttp3.Request;
-import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -34,7 +33,6 @@ public class YJLService {
 
     // 最低级的分类
     public List<Category> categories = new ArrayList<Category>();
-
 
     /**
      * 查询所有1J分类
@@ -157,7 +155,7 @@ public class YJLService {
                         String cUrl = BASE_URL + "Home/Goods/productlist/" + cid;
                         Category category = new Category(IDUtils.genId(platform, cid), platform, cid, cName, parent.getC_level() + 1, 0, parent.get_id());
                         category.setC_url(cUrl);
-                        getType(category);
+                         getType(category);
                         requestChildCategory(category);
                         log.i("cid = " + cid + " , cName = " + cName + " ,  parentTypeId = " + parent.get_id() + "  , parentTypeName = " + parent.getC_name() + " , url = " + cUrl);
                         baseDao.categoryReplace(category);
@@ -252,14 +250,11 @@ public class YJLService {
      */
     public List<ProduceInfo> requestProduces(Category category, Integer page) {
         List<ProduceInfo> produceInfos = null;
-
         if (page == null)
             page = 1;
 
         String url = category.getC_url() + "/p/" + page + "/sort/2/";
         Integer totalPage = null;
-
-        System.out.println(url);
 
         final Request request = new Request.Builder()
                 .headers(HttpUtils.getCommonHeaders())
@@ -332,7 +327,7 @@ public class YJLService {
 
             } catch (Exception e) {
                 String str = HttpUtils.errorStringNoBody(responseWrap);
-                log.e(str, e);
+                log.e(e.getMessage() + "\n" + str, e);
                 produceInfos = null;
             }
         } else {
@@ -341,6 +336,164 @@ public class YJLService {
             produceInfos = null;
         }
         return produceInfos;
+    }
+
+
+    /**
+     * 根据企业ID查询企业信息
+     *
+     * @param cid
+     * @return
+     */
+    public CompanyInfo requestCompanyWithCId(String cid) {
+
+        // 先查询联系人信息
+        CompanyInfo companyInfo = requestCompanyContact(cid);
+
+        if (companyInfo != null) {
+            companyInfo.setcId(cid);
+            companyInfo.set_id(IDUtils.genId(platform, cid));
+
+            String url = "http://shop" + cid + ".ejianlian.com/ajaxGetHeadData/sid/" + cid + "?_=" + System.currentTimeMillis();
+
+            final Request request = new Request.Builder()
+                    .headers(HttpUtils.getCommonHeaders())
+                    .header("Referer", url)
+                    .header("X-Requested-With", "XMLHttpRequest")
+                    .url(url)
+                    .build();
+
+            HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
+
+            companyInfo.setcName("");
+            companyInfo.setcMobile("");
+
+            if (responseWrap.isSuccess()) {
+                try {
+                    String json = responseWrap.body.trim();
+
+                    GsonBeanShopInfo shopInfo = new Gson().fromJson(json, GsonBeanShopInfo.class);
+
+                    String cName = shopInfo.getMsg().getShop_info().getShop_name();
+
+                    String cContact = shopInfo.getMsg().getShop_info().getManager();
+
+                    String mobile = shopInfo.getMsg().getShop_info().getTel();
+
+                    if (StringUtils.isEmpty(cContact)) {
+                        cContact = cName;
+                    }
+
+                    // 设置企业名称
+                    companyInfo.setcName(cName);
+                    // 设置固定电话
+                    companyInfo.setcMobile(mobile);
+
+                    // 如果没有获得到联系信息
+                    if (StringUtils.isEmpty(companyInfo.getcPhone())) {
+                        String phone = shopInfo.getMsg().getShop_info().getService_tel();
+                        companyInfo.setcPhone(phone);
+                        companyInfo.setcConcat(cContact);
+                    }
+
+                } catch (Exception e) {
+                    String str = HttpUtils.errorStringNoBody(responseWrap);
+                    log.e(e.getMessage() + "\n" + str, e);
+                }
+            } else {
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(str, responseWrap.e);
+            }
+
+
+        }
+
+        return companyInfo;
+
+    }
+
+    private CompanyInfo requestCompanyContact(String id) {
+        CompanyInfo companyInfo = null;
+
+        String url = "http://shop" + id + ".ejianlian.com/ajaxGetContact/sid/" + id + "?_=" + System.currentTimeMillis();
+
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", url)
+                .header("X-Requested-With", "XMLHttpRequest")
+                .url(url)
+                .build();
+
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
+
+        if (responseWrap.isSuccess()) {
+            try {
+                String json = responseWrap.body.trim();
+                GsonBeanContact gsonBeanContact = new Gson().fromJson(json, GsonBeanContact.class);
+
+                if (gsonBeanContact == null)
+                    throw new RuntimeException("Json Parse Error ! json = " + json);
+
+                if (gsonBeanContact.getCode() == 1 && gsonBeanContact.getMsg() != null) {
+                    companyInfo = new CompanyInfo();
+
+                    String address = gsonBeanContact.getMsg().getRegion_id() + gsonBeanContact.getMsg().getCity_id() + gsonBeanContact.getMsg().getOffice_address();
+                    companyInfo.setcAddress(address);
+
+                    if (gsonBeanContact.getMsg().getContacts() == null || gsonBeanContact.getMsg().getContacts().size() < 1) {
+                        companyInfo.setcConcat("");
+                        companyInfo.setcPhone("");
+                        companyInfo.setcQq("");
+                    } else {
+                        String qq = "";
+                        String phone = "";
+                        String contact = "";
+
+                        List<GsonBeanContact.MsgBean.ContactsBean> contactsBeanList = gsonBeanContact.getMsg().getContacts();
+
+                        String empty = "null";
+
+                        for (int i = 0; i < contactsBeanList.size(); i++) {
+                            GsonBeanContact.MsgBean.ContactsBean contactsBean = contactsBeanList.get(i);
+
+                            String qqTemp = StringUtils.isEmpty(contactsBean.getQq()) ? empty : contactsBean.getQq();
+                            String phoneTemp = StringUtils.isEmpty(contactsBean.getTel()) ? empty : contactsBean.getTel();
+                            String contactTemp = StringUtils.isEmpty(contactsBean.getName()) ? empty : contactsBean.getName();
+
+                            qq += qqTemp;
+                            phone += phoneTemp;
+                            contact += contactTemp;
+
+                            if (i < contactsBeanList.size() - 1) {
+                                qq += ",";
+                                phone += ",";
+                                contact += ",";
+                            }
+
+                        }
+
+                        companyInfo.setcQq(qq);
+                        companyInfo.setcPhone(phone);
+                        companyInfo.setcConcat(contact);
+                    }
+                    return companyInfo;
+
+                } else {
+                    throw new RuntimeException("code <> 1 ! json = " + json);
+                }
+
+            } catch (Exception e) {
+                String str = HttpUtils.errorStringNoBody(responseWrap);
+                log.e(e.getMessage() + "\n" + str, e);
+                companyInfo = null;
+            }
+        } else {
+            String str = HttpUtils.errorStringNoBody(responseWrap);
+            log.e(str, responseWrap.e);
+            companyInfo = null;
+        }
+
+        return companyInfo;
     }
 
 
@@ -589,4 +742,187 @@ public class YJLService {
         return companyInfo;
     }
 
+
+    public static class GsonBeanContact {
+        private int code;
+        private MsgBean msg;
+
+        public int getCode() {
+            return code;
+        }
+
+        public void setCode(int code) {
+            this.code = code;
+        }
+
+        public MsgBean getMsg() {
+            return msg;
+        }
+
+        public void setMsg(MsgBean msg) {
+            this.msg = msg;
+        }
+
+        public static class MsgBean {
+            /**
+             * office_address : 郑州市南四环金马市场向东150米路南金马航达钢铁物流园11-12号
+             * contacts : [{"name":"王红星","tel":"13949145308","qq":""},{"name":"郝鹏帅","tel":"13837197660","qq":""},{"name":"梁经理","tel":"13633841973","qq":""},{"name":"康经理","tel":"18603853678","qq":""}]
+             * region_id : 河南省
+             * city_id : 郑州市
+             */
+
+            private String office_address;
+            private String region_id;
+            private String city_id;
+            private List<ContactsBean> contacts;
+
+            public String getOffice_address() {
+                return office_address;
+            }
+
+            public void setOffice_address(String office_address) {
+                this.office_address = office_address;
+            }
+
+            public String getRegion_id() {
+                return region_id;
+            }
+
+            public void setRegion_id(String region_id) {
+                this.region_id = region_id;
+            }
+
+            public String getCity_id() {
+                return city_id;
+            }
+
+            public void setCity_id(String city_id) {
+                this.city_id = city_id;
+            }
+
+            public List<ContactsBean> getContacts() {
+                return contacts;
+            }
+
+            public void setContacts(List<ContactsBean> contacts) {
+                this.contacts = contacts;
+            }
+
+            public static class ContactsBean {
+                private String name;
+                private String tel;
+                private String qq;
+
+                public String getName() {
+                    return name;
+                }
+
+                public void setName(String name) {
+                    this.name = name;
+                }
+
+                public String getTel() {
+                    return tel;
+                }
+
+                public void setTel(String tel) {
+                    this.tel = tel;
+                }
+
+                public String getQq() {
+                    return qq;
+                }
+
+                public void setQq(String qq) {
+                    this.qq = qq;
+                }
+            }
+        }
+    }
+
+
+    public static class GsonBeanShopInfo {
+        private int code;
+        private MsgBean msg;
+
+        public int getCode() {
+            return code;
+        }
+
+        public void setCode(int code) {
+            this.code = code;
+        }
+
+        public MsgBean getMsg() {
+            return msg;
+        }
+
+        public void setMsg(MsgBean msg) {
+            this.msg = msg;
+        }
+
+        public static class MsgBean {
+            private ShopInfoBean shop_info;
+            private int deal;
+
+            public ShopInfoBean getShop_info() {
+                return shop_info;
+            }
+
+            public void setShop_info(ShopInfoBean shop_info) {
+                this.shop_info = shop_info;
+            }
+
+
+            public int getDeal() {
+                return deal;
+            }
+
+            public void setDeal(int deal) {
+                this.deal = deal;
+            }
+
+            public static class ShopInfoBean {
+
+                private String shop_name;
+                private String manager;
+                private String tel;
+                private String service_tel;
+
+                public String getShop_name() {
+                    return shop_name;
+                }
+
+                public void setShop_name(String shop_name) {
+                    this.shop_name = shop_name;
+                }
+
+                public String getManager() {
+                    return manager;
+                }
+
+                public void setManager(String manager) {
+                    this.manager = manager;
+                }
+
+                public String getTel() {
+                    return tel;
+                }
+
+                public void setTel(String tel) {
+                    this.tel = tel;
+                }
+
+                public String getService_tel() {
+                    return service_tel;
+                }
+
+                public void setService_tel(String service_tel) {
+                    this.service_tel = service_tel;
+                }
+            }
+
+
+        }
+    }
 }

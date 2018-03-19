@@ -28,15 +28,10 @@ public class HuiCongWangThread implements Runnable {
 
     @Override
     public void run() {
-        boolean first = true;
-        System.out.println(first);
-        while (true) {
-            crawler(first);
-            first = false;
-        }
+        crawler();
     }
 
-    public void crawler(boolean first) {
+    public void crawler() {
         //最低级分类
         List<Category> categories = baseService.requestCateogry();
 
@@ -46,11 +41,10 @@ public class HuiCongWangThread implements Runnable {
                 Integer maxPage = 0;
                 Integer currPage = 1;
 
-                if (first) {
-                    //从数据库里查询最大页数
-                    int dbMaxPage = baseDao.produceMaxPage(HuiCongService.platform, category.get_id());
-                    currPage = dbMaxPage - 2;
-                }
+                //从数据库里查询最大页数
+                int dbMaxPage = baseDao.produceMaxPage(HuiCongService.platform, category.get_id());
+                currPage = dbMaxPage - 2;
+
                 if (currPage < 1) {
                     currPage = 1;
                 }

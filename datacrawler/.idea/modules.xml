@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/datacrawler.iml" filepath="$PROJECT_DIR$/.idea/modules/datacrawler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/datacrawler.iml" filepath="$PROJECT_DIR$/datacrawler.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/datacrawler_main.iml" filepath="$PROJECT_DIR$/.idea/modules/datacrawler_main.iml" group="datacrawler" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/datacrawler_test.iml" filepath="$PROJECT_DIR$/.idea/modules/datacrawler_test.iml" group="datacrawler" />
     </modules>

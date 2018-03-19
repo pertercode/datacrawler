@@ -29,6 +29,9 @@ public class CompanyInfo {
     public String category;
 
 
+    private String cUrl;
+
+
     public String get_id() {
         return _id;
     }
@@ -91,6 +94,14 @@ public class CompanyInfo {
 
     public void setcAddress(String cAddress) {
         this.cAddress = cAddress;
+    }
+
+    public String getcUrl() {
+        return cUrl;
+    }
+
+    public void setcUrl(String cUrl) {
+        this.cUrl = cUrl;
     }
 
     public CompanyInfo() {
