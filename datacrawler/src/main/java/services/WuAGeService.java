@@ -214,7 +214,9 @@ public class WuAGeService {
 
         List<ProduceInfo> produceInfos = null;
 
-        String url = category.getC_url() + "&browseSchema=2&pageSize=60&page=" + page;
+        String url = category.getC_url() + "&browseSchema=1&page=" + page;
+
+//        String url = "https://s.wuage.com/product/search?browseSchema=1&page=1&propertyString=2175:55324308&postCategoryIds=125148001&psa=W2.a269.a109.s22";
 
         //创建url
         Request request = new Request.Builder().url(url).headers(HttpUtils.getCommonHeaders()).build();
@@ -225,7 +227,7 @@ public class WuAGeService {
             try {
                 produceInfos = new ArrayList<ProduceInfo>();
                 Document doc = Jsoup.parse(responseWrap.body);
-                Elements producesElements = doc.select(".mod-img .fe-col");
+                Elements producesElements = doc.select(".mod-list li.fe-row");
 
                 //当前页数
                 Element pageElements = doc.select("#page").get(0);
@@ -259,15 +261,20 @@ public class WuAGeService {
                             imgSrc = "https:" + imgSrc;
                         }
 
+                        int index = imgSrc.lastIndexOf('?');
+
+                        if (index > -1) {
+                            imgSrc = imgSrc.substring(0, index);
+                        }
+
                         //商品名
                         String pName = e.select("p a").text().trim();
-
 
                         //商品价格
                         String price = e.select(".price-box").text().trim().replace(",", "");
 
                         //企业名
-                        String cName = e.select(".company .company-name").text().trim();
+                        String cName = e.select(".company-name").text().trim();
 
                         String cUrl = "";
 
@@ -355,6 +362,18 @@ public class WuAGeService {
                 String cId = url.split("/")[3];
                 //_id
                 String c_id = IDUtils.genId(platform, cId);
+
+                if (concat.indexOf("未填写") > -1) {
+                    concat = "";
+                }
+
+                if (tel.indexOf("未填写") > -1) {
+                    tel = "";
+                }
+
+                if (cAddr.indexOf("未填写") > -1) {
+                    cAddr = "";
+                }
 
                 companyInfo = new CompanyInfo(c_id, cId, cName, concat, tel, tel, null, cAddr);
 
