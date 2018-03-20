@@ -23,11 +23,7 @@ public class GCWService {
     public static final String platform = "guangcaiwang";
     private BaseDao baseDao = new BaseDao();
 
-    /**
-     * 查询所有分类，返回所有最低级分类
-     *
-     * @return 返回所有最底级分类
-     */
+
     public List<Category> requestCategory() {
         List<Category> categories = null;
         String url = "http://www.gldjc.com/getMaterailCatetoryList.ajax";
@@ -39,9 +35,14 @@ public class GCWService {
             try {
                 categories = new ArrayList<Category>();
                 String body = responseWrap.body;
+
+                System.out.println(body);
+
                 Gson gson = new Gson();
                 M m = gson.fromJson(body, M.class);
+
                 List<JsonList> categorylist = m.getMaterailCatetorylList();
+
                 for (JsonList list : categorylist) {
                     String Level1name = list.getName();
                     String level1Cid = list.getMaterialCategoryId().toString();
@@ -68,11 +69,13 @@ public class GCWService {
 
             } catch (Exception e) {
                 String str = HttpUtils.errorStringNoBody(responseWrap);
-                log.e(str, e);
+                log.e(e.getMessage() + "\n" + str, e);
+                categories = null;
             }
         } else {
-            String str = HttpUtils.errorString(responseWrap);
+            String str = HttpUtils.errorStringNoBody(responseWrap);
             log.e(str, responseWrap.e);
+            categories = null;
         }
         return categories;
     }

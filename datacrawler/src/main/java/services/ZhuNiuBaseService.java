@@ -22,6 +22,7 @@ import utils.StringUtils;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 筑牛网抓取服务
@@ -212,6 +213,10 @@ public class ZhuNiuBaseService {
 
         if (responseWrap.isSuccess()) {
             try {
+
+                baseDao.typeNameDelete(category.get_id());
+                baseDao.typeValueDelete(category.get_id());
+
                 String body = responseWrap.body;
                 Document doc = Jsoup.parse(body);
 
@@ -227,7 +232,8 @@ public class ZhuNiuBaseService {
 
                     String typeName = type.text().trim().split("：")[0];
 
-                    String _id = IDUtils.genId(platform, typeName + "_" + category.getC_id());
+
+                    String _id = IDUtils.genId(platform, IDUtils.uuid());
 
                     TypeName typeNameObj = new TypeName(_id, typeName, category.get_id());
 
@@ -239,8 +245,12 @@ public class ZhuNiuBaseService {
                     for (int j = 0; j < value.size(); j++) {
                         Element a = value.get(j);
                         TypeValue typeValue = new TypeValue();
-                        typeValue.set_id(IDUtils.genId(platform, a.attr("data-info").trim()));
+
+                        String vId = a.attr("data-info").trim();
+
+                        typeValue.set_id(IDUtils.genId(_id, vId));
                         typeValue.settValue(a.text().trim());
+                        typeValue.setCategoryId(category.get_id());
                         typeValue.setTypeNameId(_id);
 
                         if (typeValue.gettValue().length() <= 150) {

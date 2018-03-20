@@ -5,6 +5,7 @@ import okhttp3.*;
 import java.io.IOException;
 import java.net.Proxy;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class HttpUtils {
 
@@ -116,7 +117,6 @@ public class HttpUtils {
     }
 
 
-
     public static synchronized ResponseWrap retryHttpNoProxy(Request request) {
         return retryHttpNoProxy(request, "UTF-8");
     }
@@ -150,20 +150,33 @@ public class HttpUtils {
     }
 
 
-
     public static String errorString(ResponseWrap responseWrap) {
-        int code = responseWrap.response.code();
-        String url = responseWrap.response.request().url().url().toString();
-        String message = responseWrap.response.message();
-        String body = responseWrap.body;
-        return "[http_error] " + url + "\n" + code + " , " + message + "\n" + body;
+        String res = "";
+        try {
+            int code = responseWrap.response.code();
+            String url = responseWrap.response.request().url().url().toString();
+            String message = responseWrap.response.message();
+            String body = responseWrap.body;
+            res = "[http_error] " + url + "\n" + code + " , " + message + "\n" + body;
+        } catch (Exception e) {
+            e.printStackTrace();
+            org.apache.log4j.Logger.getLogger(HttpUtils.class).error(e.getMessage());
+        }
+        return res;
     }
 
     public static String errorStringNoBody(ResponseWrap responseWrap) {
-        int code = responseWrap.response.code();
-        String url = responseWrap.response.request().url().url().toString();
-        String message = responseWrap.response.message();
-        return "[http_error] " + url + "\n" + code + " , " + message;
+        String res = "";
+        try {
+            int code = responseWrap.response.code();
+            String url = responseWrap.response.request().url().url().toString();
+            String message = responseWrap.response.message();
+            res = "[http_error] " + url + "\n" + code + " , " + message;
+        } catch (Exception e) {
+            e.printStackTrace();
+            org.apache.log4j.Logger.getLogger(HttpUtils.class).error(e.getMessage());
+        }
+        return res;
     }
 
 

@@ -1,9 +1,6 @@
 package main;
 
-import crawler.EJianLianThread;
-import crawler.HuiCongWangThread;
-import crawler.YunZhuShangChengThread;
-import crawler.ZhuNiuThread;
+import crawler.*;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
 
@@ -30,11 +27,15 @@ public class App {
             if ("zhuniu".equals(platform.trim())) {
                 zhuNiu();
             } else if ("ejianlian".equals(platform.trim())) {
-                eJianLian();
+                eJianLian();        // ok
             } else if ("yunzhushangcheng".equals(platform.trim())) {
-                yunzhushangcheng();
+                yunzhushangcheng();     // ok
             } else if ("huicong".equals(platform.trim())) {
                 huicong();
+            } else if ("wuage".equals(platform.trim())) {
+                wuage();
+            }else if("guangcai".equals(platform.trim())){
+                guangcai();
             }
         } else {
             System.err.println("请加入运行参数，以告诉程序需要抓取的平台；例如 java -jar crawler.jar zhuniu");
@@ -61,4 +62,13 @@ public class App {
         thread.run();
     }
 
+    public static void wuage() {
+        WuAGwThread thread = new WuAGwThread();
+        thread.run();
+    }
+
+    public static void guangcai() {
+        GCWThread thread = new GCWThread();
+        thread.run();
+    }
 }

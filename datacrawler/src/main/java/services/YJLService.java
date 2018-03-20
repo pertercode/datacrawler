@@ -155,7 +155,7 @@ public class YJLService {
                         String cUrl = BASE_URL + "Home/Goods/productlist/" + cid;
                         Category category = new Category(IDUtils.genId(platform, cid), platform, cid, cName, parent.getC_level() + 1, 0, parent.get_id());
                         category.setC_url(cUrl);
-                         getType(category);
+                        getType(category);
                         requestChildCategory(category);
                         log.i("cid = " + cid + " , cName = " + cName + " ,  parentTypeId = " + parent.get_id() + "  , parentTypeName = " + parent.getC_name() + " , url = " + cUrl);
                         baseDao.categoryReplace(category);
@@ -346,7 +346,6 @@ public class YJLService {
      * @return
      */
     public CompanyInfo requestCompanyWithCId(String cid) {
-
         // 先查询联系人信息
         CompanyInfo companyInfo = requestCompanyContact(cid);
 
@@ -390,7 +389,7 @@ public class YJLService {
                     companyInfo.setcMobile(mobile);
 
                     // 如果没有获得到联系信息
-                    if (StringUtils.isEmpty(companyInfo.getcPhone())) {
+                    if (StringUtils.isEmpty(companyInfo.getcPhone()) || companyInfo.getcPhone().startsWith("null")) {
                         String phone = shopInfo.getMsg().getShop_info().getService_tel();
                         companyInfo.setcPhone(phone);
                         companyInfo.setcConcat(cContact);

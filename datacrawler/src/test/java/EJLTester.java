@@ -20,7 +20,7 @@ public class EJLTester {
     @Test
     public void runTester() {
         YJLService service = new YJLService();
-        CompanyInfo companyInfo =  service.requestCompanyWithCId("3357");
+        CompanyInfo companyInfo =  service.requestCompanyWithCId("2277") ;
 
     }
 

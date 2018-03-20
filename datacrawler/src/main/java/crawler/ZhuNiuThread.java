@@ -24,6 +24,9 @@ public class ZhuNiuThread implements Runnable {
     @Override
     public void run() {
         baseService.requestCategory("2");
+
+        System.exit(0);
+
         crawler(true);
     }
 
@@ -70,6 +73,7 @@ public class ZhuNiuThread implements Runnable {
                         }
 
                         if (companyInfo != null) {
+
                             // 设置类别信息
                             Category category = baseService.compCategory(companyInfo.category);
 
