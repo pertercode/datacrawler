@@ -150,11 +150,9 @@ public class WuAGeService {
         HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
 
         if (responseWrap.isSuccess()) {
-
             try {
                 Document doc = Jsoup.parse(responseWrap.body);
                 Elements elements = doc.select(".mod-sn-list li");
-
                 if (elements.size() > 0) {
                     // 不是最底层则有一个品名的问题，去掉这个问题
                     if (category.getC_islow() < 1) {

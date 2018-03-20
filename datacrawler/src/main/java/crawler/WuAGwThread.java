@@ -20,7 +20,6 @@ public class WuAGwThread implements Runnable {
     @Override
     public void run() {
         try {
-
             crawler();
         } catch (Exception e) {
             e.printStackTrace();
@@ -31,23 +30,18 @@ public class WuAGwThread implements Runnable {
 
 
     public void crawler() {
-
         //最底层分类
         List<Category> categories = baseService.requestCateogry();
-
         if (categories != null && categories.size() > 0) {
             for (Category category : categories) {
-
                 Integer maxPage = 0;
                 Integer currPage = 1;
                 //从数据库里查询最大页数
                 int dbMaxPage = baseDao.produceMaxPage(WuAGeService.platform, category.get_id());
                 currPage = dbMaxPage - 5;
-
                 if (currPage < 1) {
                     currPage = 1;
                 }
-
                 do {
                     //抓取商品信息
                     List<ProduceInfo> produceInfos = baseService.requestProduceInfo(category, currPage);

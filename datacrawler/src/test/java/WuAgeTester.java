@@ -17,8 +17,8 @@ public class WuAgeTester {
         List<Category> categoryList = service.requestCateogry() ;
 
         ProduceInfo produceInfo = service.requestProduceInfo(categoryList.get(0) , 1).get(0);
-
-        service.requestCompanyInfo(produceInfo.getpCUrl()) ;
+        System.out.println(produceInfo);
+        //service.requestCompanyInfo(produceInfo.getpCUrl()) ;
     }
 
 
