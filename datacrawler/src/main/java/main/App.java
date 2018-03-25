@@ -36,6 +36,10 @@ public class App {
                 wuage();
             }else if("guangcai".equals(platform.trim())){
                 guangcai();
+            }else if("huamu".equals(platform.trim())){
+                huamu();
+            }else if("yuanlin".equals(platform.trim())){
+                yuanLin();
             }
         } else {
             System.err.println("请加入运行参数，以告诉程序需要抓取的平台；例如 java -jar crawler.jar zhuniu");
@@ -71,4 +75,16 @@ public class App {
         GCWThread thread = new GCWThread();
         thread.run();
     }
+
+    public static void huamu() {
+        HuaMuThread thread = new HuaMuThread();
+        thread.run();
+    }
+
+    public static void yuanLin() {
+        YuanLinThread thread = new YuanLinThread();
+        thread.run();
+    }
+
+
 }

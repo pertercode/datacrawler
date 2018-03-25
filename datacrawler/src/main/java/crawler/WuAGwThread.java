@@ -48,7 +48,11 @@ public class WuAGwThread implements Runnable {
 
                     System.out.println("produceInfos.size() = " + produceInfos.size());
 
-                    if (produceInfos != null && produceInfos.size() > 0) {
+                    if (produceInfos != null) {
+
+                        if (produceInfos.size() < 1)
+                            break;
+
                         if (maxPage == 0) {
                             maxPage = produceInfos.get(0).getTotalPage();
                         }

@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 public class HttpUtils {
 
     // 重试次数
-    public static final int retry_count = 16;
+    public static final int retry_count = 20;
 
     // 重试间隔,单位为秒
     public static final int retry_time = 1;
@@ -75,7 +75,7 @@ public class HttpUtils {
     public static class ResponseWrap {
         public Response response;
         public String body;
-        public Exception e;
+        public Throwable e;
 
         public boolean isSuccess() {
             return response != null && response.isSuccessful() && e == null;
@@ -99,10 +99,18 @@ public class HttpUtils {
                 String body = new String(b, charset);
                 responseWrap.body = body;
                 responseWrap.e = null;
+
+                if (responseWrap.response.code() == 400) {
+                    return responseWrap;
+                }
+
                 if (responseWrap.isSuccess())
                     return responseWrap;
             } catch (IOException e) {
                 responseWrap.e = e;
+            } catch (Throwable e) {
+                responseWrap.e = e;
+                return responseWrap;
             }
 
             if (retry_time > 0) {
@@ -132,10 +140,18 @@ public class HttpUtils {
                 String body = new String(b, charset);
                 responseWrap.body = body;
                 responseWrap.e = null;
+
+                if (responseWrap.response.code() == 400) {
+                    return responseWrap;
+                }
+
                 if (responseWrap.isSuccess())
                     return responseWrap;
             } catch (IOException e) {
                 responseWrap.e = e;
+            } catch (Throwable e) {
+                responseWrap.e = e;
+                return responseWrap;
             }
 
             if (retry_time > 0) {

@@ -1,6 +1,7 @@
 package services;
 
 import bean.*;
+import cache.CompanyCache;
 import com.google.gson.Gson;
 import dao.BaseDao;
 import dao.BaseMapper;
@@ -35,6 +36,60 @@ public class ZhuNiuBaseService {
     private LogUtils log = new LogUtils(platform, ZhuNiuBaseService.class);
 
     private BaseDao baseDao = new BaseDao();
+
+
+    public void requestProduces(Category category) {
+
+        int maxPage = 99999999;
+
+        int currentPage = 1;
+
+        int emptyPage = 0;
+
+        do {
+            List<ProduceInfo> produceInfos = requestAllProduce(category, currentPage);
+
+            if (produceInfos != null) {
+
+                if (produceInfos.size() > 0) {
+                    for (int i = 0; i < produceInfos.size(); i++) {
+                        ProduceInfo produceInfo = produceInfos.get(i);
+
+                        String url = produceInfo.getpUrl();
+
+                        // 查询商品对应得企业信息，由于商品详情+ 企业信息+ 分类都在一个页面，所以 company不仅有企业信息还有分类信息
+                        CompanyInfo companyInfo = CompanyCache.get(produceInfo.getcName());
+
+                        // 看看是否有缓存
+                        if (companyInfo == null) {
+                            companyInfo = requestCompanyInfo(url);
+                            // 加入缓存
+                            CompanyCache.add(companyInfo);
+                        }
+
+                        if (companyInfo != null) {
+                            produceInfo.setCategory(category);
+
+                            // 设置企业信息
+                            baseDao.companyReplace(companyInfo);
+
+                            produceInfo.setCompanyInfo(companyInfo);
+                            // 存储产品信息
+                            baseDao.produceReplace(produceInfo);
+                            log.i("[page = " + produceInfo.getPage() + "] 产品入库 ： " + produceInfo.getpName() + "  ,  企业入库： " + produceInfo.getCompanyInfo().getcName() + " ,  类型入库 ： " + category.getC_name());
+                        } else {
+                            log.e("ERROR： requestCompanyInfo 方法返回的 CompanyInfo对象是空 ， 查询URL = " + url + " ， 相关参数 =  " + new Gson().toJson(produceInfo), null);
+                        }
+                    }
+                } else {
+                    if (emptyPage >= 3) break;
+                    emptyPage++;
+                }
+
+                currentPage++;
+            }
+        } while (currentPage <= maxPage);
+    }
 
 
     /**
@@ -86,7 +141,6 @@ public class ZhuNiuBaseService {
 
                     baseDao.categoryReplace(category);
                 }
-
             } else {
                 // 记录错误日志
                 String str = " css 选择 .p-list.clearfix table tr td , 找到的标签数量 < 2 , size = " + tdElements.size();
@@ -167,6 +221,9 @@ public class ZhuNiuBaseService {
                         if (category.getC_islow() == 1) {
                             // 最底层抓取规格型号
                             requestType(category);
+
+                            // 抓取商品
+                            requestProduces(category);
                         }
 
                     }
@@ -219,6 +276,13 @@ public class ZhuNiuBaseService {
 
                 String body = responseWrap.body;
                 Document doc = Jsoup.parse(body);
+
+                Elements tables = doc.select(".p-list table");
+
+                if (tables.size() < 1) {
+                    log.e("该 url 未找到  .p-list table ,  url = " + url, null);
+                    return;
+                }
 
                 Elements elements = doc.select(".p-list table").get(0).select("tr");
 
@@ -280,12 +344,12 @@ public class ZhuNiuBaseService {
      *
      * @return
      */
-    public List<ProduceInfo> requestAllProduce(Integer page) {
+    public List<ProduceInfo> requestAllProduce(Category category, Integer page) {
         List<ProduceInfo> produceInfos = null;
         if (page == null)
             page = 1;
 
-        String url = BASE_URL + "market/product_lists/p/" + page;
+        String url = BASE_URL + "market/product_lists?region=&isTax=2&keywords=&orderPrice=&category=" + category.getC_id() + "&fieldValue=&p=" + page;
 
         final Request request = new Request.Builder()
                 .headers(HttpUtils.getCommonHeaders())
@@ -300,6 +364,9 @@ public class ZhuNiuBaseService {
             produceInfos = new ArrayList<ProduceInfo>();
             try {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
+
+                Elements pages = doc.select(".page div");
+
                 Elements producesHtml = doc.select(".info-box");
                 int dataSize = producesHtml.size();
 
@@ -340,16 +407,15 @@ public class ZhuNiuBaseService {
                     ProduceInfo produceInfo = new ProduceInfo(_id, page, 0, pid, pName, contentUrl, pPrice, pSrc);
                     produceInfo.setcName(cName);
                     produceInfos.add(produceInfo);
+
                 }
             } catch (Exception e) {
-                // 记录失败日志
                 String str = HttpUtils.errorStringNoBody(responseWrap);
-                log.e(str, e);
+                log.e(e.getMessage() + "\n" + str, e);
                 produceInfos = null;
             }
         } else {
-            // 记录失败日志
-            String str = HttpUtils.errorString(responseWrap);
+            String str = HttpUtils.errorStringNoBody(responseWrap);
             log.e(str, responseWrap.e);
             produceInfos = null;
         }
@@ -376,7 +442,7 @@ public class ZhuNiuBaseService {
                 Elements categoryHtml = doc.select("div .template-bread");
 
                 // 分类
-                String category = categoryHtml.get(0).text().trim();
+//                String category = categoryHtml.get(0).text().trim();
 
                 // 企业信息
                 Element companyElement = doc.select(".template-store").get(0);
@@ -411,10 +477,10 @@ public class ZhuNiuBaseService {
 
                 info = new CompanyInfo(_id, cId, companyName, companyContact, companyMobile, companyPhone, companyQq, companyAddress);
 
-                if (category == null || category.trim().length() < 1) {
-                    category = ">其他未知";
-                }
-                info.category = category;
+//                if (category == null || category.trim().length() < 1) {
+//                    category = ">其他未知";
+//                }
+//                info.category = category;
 
             } catch (Exception e) {
                 // 记录失败日志

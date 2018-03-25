@@ -20,7 +20,7 @@ public class LogUtils {
         log.info(str);
     }
 
-    public void e(String str, Exception e) {
+    public void e(String str, Throwable e) {
         log.error(str, e);
     }
 }
