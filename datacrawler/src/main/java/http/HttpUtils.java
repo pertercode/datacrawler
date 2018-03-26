@@ -3,6 +3,7 @@ package http;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Proxy;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -75,11 +76,27 @@ public class HttpUtils {
     public static class ResponseWrap {
         public Response response;
         public String body;
+        public InputStream inputStream;
         public Throwable e;
+
 
         public boolean isSuccess() {
             return response != null && response.isSuccessful() && e == null;
         }
+    }
+
+
+    public static synchronized ResponseWrap download(Request request) {
+        ResponseWrap responseWrap = new ResponseWrap();
+        Call call = clientNoProxy().newCall(request);
+        try {
+            responseWrap.response = call.execute();
+            InputStream inputStream = responseWrap.response.body().byteStream();
+            responseWrap.inputStream = inputStream;
+        } catch (IOException e) {
+            responseWrap.e = e;
+        }
+        return responseWrap;
     }
 
 

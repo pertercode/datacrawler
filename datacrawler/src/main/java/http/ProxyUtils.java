@@ -30,7 +30,7 @@ public class ProxyUtils {
         return proxy;
     }
 
-    public static okhttp3.Authenticator getProxyAuthenticator() {
+    public static Authenticator getProxyAuthenticator() {
         return new Authenticator() {
             @Override
             public Request authenticate(Route route, Response response) throws IOException {

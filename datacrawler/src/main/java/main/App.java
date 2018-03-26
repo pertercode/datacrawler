@@ -34,12 +34,14 @@ public class App {
                 huicong();
             } else if ("wuage".equals(platform.trim())) {
                 wuage();
-            }else if("guangcai".equals(platform.trim())){
+            } else if ("guangcai".equals(platform.trim())) {
                 guangcai();
-            }else if("huamu".equals(platform.trim())){
+            } else if ("huamu".equals(platform.trim())) {
                 huamu();
-            }else if("yuanlin".equals(platform.trim())){
+            } else if ("yuanlin".equals(platform.trim())) {
                 yuanLin();
+            } else if ("shijiegongchang".equals(platform.trim())) {
+                shijiegongchang();
             }
         } else {
             System.err.println("请加入运行参数，以告诉程序需要抓取的平台；例如 java -jar crawler.jar zhuniu");
@@ -86,5 +88,10 @@ public class App {
         thread.run();
     }
 
+
+    public static void shijiegongchang() {
+        ShiJieGCThread thread = new ShiJieGCThread();
+        thread.run();
+    }
 
 }
