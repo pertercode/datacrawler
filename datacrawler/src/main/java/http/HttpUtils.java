@@ -2,9 +2,8 @@ package http;
 
 import okhttp3.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.Proxy;
+import java.io.*;
+import java.net.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -69,6 +68,7 @@ public class HttpUtils {
         builder.add("Accept", "*/*");
         builder.add("User-Agent", HttpHeaderUtils.getNextUserAgent());
         builder.add("X-Forwarded-For", IpUtils.getRandomIp());
+        builder.add("Accept-Encoding", "identity");
         return builder.build();
     }
 
@@ -86,17 +86,25 @@ public class HttpUtils {
     }
 
 
-    public static synchronized ResponseWrap download(Request request) {
-        ResponseWrap responseWrap = new ResponseWrap();
-        Call call = clientNoProxy().newCall(request);
+    public static synchronized InputStream download(String urlStr, String referer) {
+        InputStream is = null;
         try {
-            responseWrap.response = call.execute();
-            InputStream inputStream = responseWrap.response.body().byteStream();
-            responseWrap.inputStream = inputStream;
-        } catch (IOException e) {
-            responseWrap.e = e;
+            URL url = new URL(urlStr);
+
+            URLConnection urlConnection = url.openConnection();
+
+            HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;
+            httpURLConnection.setRequestMethod("GET");
+            httpURLConnection.addRequestProperty("accept", "image/webp,image/*,*/*;q=0.8");
+            httpURLConnection.addRequestProperty("referer", referer);
+            httpURLConnection.addRequestProperty("user-agent", HttpHeaderUtils.getNextUserAgent());
+            httpURLConnection.connect();
+            is = httpURLConnection.getInputStream();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return responseWrap;
+        return is;
     }
 
 
@@ -157,7 +165,6 @@ public class HttpUtils {
                 String body = new String(b, charset);
                 responseWrap.body = body;
                 responseWrap.e = null;
-
                 if (responseWrap.response.code() == 400) {
                     return responseWrap;
                 }

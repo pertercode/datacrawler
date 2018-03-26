@@ -341,30 +341,41 @@ public class ShiJieGCService {
      */
     public CompanyInfo getCompanyInfo(String url) {
         CompanyInfo companyInfo = null;
-        url = url + "contact/";
+        String destUrl = url + "contact/";
         final Request request = new Request.Builder()
                 .headers(HttpUtils.getCommonHeaders())
                 .header("Referer", BASE_URL)
-                .url(url)
+                .url(destUrl)
                 .build();
         HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
+
+        int code = responseWrap.response.code();
+
+        if (code >= 400 && code < 500) return null;
+
         if (responseWrap.isSuccess()) {
             try {
                 Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
 
                 String title = doc.select("title").text().trim();
 
-                if (title.indexOf("公司不存在") > -1) {
+                if (title.indexOf("公司不存在") > -1 || title.indexOf("企业_世界工厂") > -1) {
                     return null;
                 }
 
-                String _id = doc.select("#menu a").get(0).attr("href").split("https://")[1];
-                if (_id.startsWith("qiye.gongchang.com")) {
-                    _id = _id.split("/")[1];
-                } else {
-                    _id = _id.split(".gongchang")[0];
+                String _id = url.replace("https://", "");
+                if (_id.endsWith("/")) _id = _id.substring(0, _id.length() - 1);
+
+                if (doc.select(".contact_body").size() > 0) {
+                    return companyInfo1(doc, _id, url);
                 }
-                Elements c = doc.select("#main").get(0).select(" .main_body").get(0).select("table").get(0).select("tr");
+
+                if (doc.select(".met-editor.lazyload").size() > 0) {
+                    return companyInfo2(doc, _id);
+                }
+
+
+                Elements c = doc.select(".px13.lh18 table").get(0).select("tr");
                 String cName = "";
                 String cAddress = "";
                 String mobile = "";
@@ -418,6 +429,148 @@ public class ShiJieGCService {
         return companyInfo;
     }
 
+    //////////////////////////
+    // 下面各个 companyInfo 方法都是对网站的适配
+    /////////////////////////
+    private CompanyInfo companyInfo1(Document doc, String cid, String hurl) {
+        CompanyInfo companyInfo = null;
+
+        try {
+            String title = doc.select("title").text().trim();
+
+            if (title.indexOf("公司不存在") > -1 || title.indexOf("企业_世界工厂") > -1) {
+                return null;
+            }
+
+            Elements elements = doc.select(".contact_body ul li");
+
+            if (elements.size() > 0) {
+                String cName = "";
+                String cAddress = "";
+                String mobile = "";
+                String cContactName = "";
+                String cPhone = "";
+                String qq = "";
+
+
+                for (int i = 0; i < elements.size(); i++) {
+                    Element element = elements.get(i);
+
+                    String text = element.text().trim();
+
+                    text = text.replaceAll(Jsoup.parse("&nbsp;").text(), "").replaceAll("\\s+", "")
+                            .replaceAll(Jsoup.parse("&#12288;").text(), "");
+
+                    if (i == 0) {
+                        // 企业名称
+                        cName = elements.get(0).text().trim();
+                    }
+
+                    if (text.indexOf("联系人") > -1) {
+                        cContactName = element.ownText().trim();
+                    }
+
+                    if (text.indexOf("电话") > -1) {
+                        String phoneUrl = element.children().last().attr("src").trim();
+                        cPhone = searchPhone(phoneUrl, hurl);
+                    }
+
+                    if (text.indexOf("所在地") > -1) {
+                        cAddress = element.ownText().trim();
+                    }
+
+                }
+                companyInfo = new CompanyInfo(IDUtils.genId(platform, cid), cid, cName, cContactName, mobile, cPhone, qq, cAddress);
+            }
+
+        } catch (Exception e) {
+            log.e(e.getMessage(), e);
+            companyInfo = null;
+        }
+        return companyInfo;
+    }
+
+
+    private CompanyInfo companyInfo2(Document doc, String cid) {
+        CompanyInfo companyInfo = null;
+
+        try {
+            String title = doc.select("title").text().trim();
+
+            if (title.indexOf("公司不存在") > -1 || title.indexOf("企业_世界工厂") > -1) {
+                return null;
+            }
+
+            Elements elements = doc.select(".met-editor.lazyload div p");
+
+            if (elements.size() > 0) {
+
+                String cName = "";
+                String cAddress = "";
+                String mobile = "";
+                String cContactName = "";
+                String cPhone = "";
+                String qq = "";
+
+
+                for (int i = 0; i < elements.size(); i++) {
+                    Element element = elements.get(i);
+
+                    String text = element.text().trim();
+
+                    text = text.replaceAll(Jsoup.parse("&nbsp;").text(), "").replaceAll("\\s+", "")
+                            .replaceAll(Jsoup.parse("&#12288;").text(), "");
+
+
+                    if (i == 0) {
+                        // 企业名称
+                        cName = element.text().trim();
+                        cContactName = cName;
+                    }
+
+                    if (text.indexOf("Tel") > -1) {
+                        cPhone = text.split("：")[1].trim();
+                    }
+
+                    if (text.indexOf("Mobile") > -1) {
+                        mobile = text.split("：")[1].trim();
+                    }
+
+                    if (text.indexOf("Add") > -1) {
+                        cAddress = text.split("：")[1].trim();
+                    }
+
+                }
+
+                companyInfo = new CompanyInfo(IDUtils.genId(platform, cid), cid, cName, cContactName, mobile, cPhone, qq, cAddress);
+            }
+
+        } catch (Exception e) {
+            log.e(e.getMessage(), e);
+            companyInfo = null;
+        }
+        return companyInfo;
+    }
+
+
+    public BufferedImage download(String url, String hurl) throws Exception {
+        BufferedImage bd = null;
+        for (int i = 0; i < 2; i++) {
+            //发送请求
+            InputStream is = HttpUtils.download(url, hurl);
+
+            bd = ImageIO.read(is);
+
+            is.close();
+
+            if (bd != null) {
+                return bd;
+            }
+            Thread.sleep(1000);
+        }
+        return bd;
+    }
+
     /**
      * 查询电话
      */
@@ -426,28 +579,24 @@ public class ShiJieGCService {
 
         if (!StringUtils.isEmpty(url) && !StringUtils.isEmpty(hurl)) {
             try {
-                //创建url
-                Request request = new Request.Builder().url(url).headers(HttpUtils.getCommonHeaders())
-                        .addHeader("referer", hurl)
-                        .addHeader("user-agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0")
-                        .build();
 
-                //发送请求
-                HttpUtils.ResponseWrap responseWrap = HttpUtils.download(request);
+                BufferedImage bd = download(url, hurl);
 
-                InputStream is = responseWrap.inputStream;
+                if (bd != null) {
+                    ITesseract instance = new Tesseract();  // JNA Interface Mapping
 
-                BufferedImage bd = ImageIO.read(is);
+                    File tessDataFolder = new File("C:\\tessdata");
 
-                ITesseract instance = new Tesseract();  // JNA Interface Mapping
+                    if (!tessDataFolder.exists()) {
+                        log.e("tessdata not found , path = " + tessDataFolder.getAbsolutePath(), null);
+                    }
 
-                File tessDataFolder = Resources.getResourceAsFile("tessdata").getAbsoluteFile();
-                instance.setDatapath(tessDataFolder.getAbsolutePath());
-                instance.setLanguage("new");
-                phone = instance.doOCR(bd);
-
-                is.close();
-                responseWrap.response.close();
+                    instance.setDatapath(tessDataFolder.getAbsolutePath());
+                    instance.setLanguage("new");
+                    phone = instance.doOCR(bd);
+                } else {
+                    log.e("图片 is null , " + url + ", \n from url  ： " + hurl, null);
+                }
             } catch (Exception e) {
                 log.e(e.getMessage() + " , url  =  " + url + ", hurl ： " + hurl, e);
                 phone = "";
