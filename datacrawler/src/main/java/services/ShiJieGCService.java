@@ -445,7 +445,6 @@ public class ShiJieGCService {
                         String purl = co.select("td").get(1).select("img").attr("src").trim();
                         cPhone = searchPhone(purl, destUrl, "手机");
 
-//
 //                        if (StringUtils.isEmpty(cPhone) && !StringUtils.isEmpty(phoneTemp)) {
 //                            log.e("\n  phoneTemp =  " + phoneTempBack + ". \n img src = " + purl + " . \n comp_url = " + destUrl + " .   \n", null);
 //                        }
@@ -600,45 +599,123 @@ public class ShiJieGCService {
     }
 
 
-    public File download(String url, String hurl) throws Exception {
-        for (int i = 0; i < 2; i++) {
-            //发送请求
-            File file = HttpUtils.download(url, hurl);
-            if (file != null && file.length() > 1) return file;
-        }
-        return null;
-    }
-
     /**
      * 查询电话
      */
     public String searchPhone(String url, String hurl, String type) {
         String phone = "";
+
         if (!StringUtils.isEmpty(url) && !StringUtils.isEmpty(hurl)) {
-            try {
-                File file = download(url, hurl);
-                if (file != null && file.length() > 1) {
-                    ITesseract instance = new Tesseract();  // JNA Interface Mapping
 
-                    File tessDataFolder = new File("C:\\tessdata");
+            Throwable ex = null;
 
-                    if (!tessDataFolder.exists()) {
-                        log.e("tessdata not found , path = " + tessDataFolder.getAbsolutePath(), null);
+            File file = HttpUtils.download(url, hurl);
+
+            for (int i = 0; i < 4; i++) {
+                try {
+                    if (file != null && file.length() > 1) {
+                        ITesseract instance = new Tesseract();  // JNA Interface Mapping
+
+                        File tessDataFolder = new File("C:\\tessdata");
+
+                        if (!tessDataFolder.exists()) {
+                            log.e("tessdata not found , path = " + tessDataFolder.getAbsolutePath(), null);
+                        }
+
+                        instance.setDatapath(tessDataFolder.getAbsolutePath());
+                        instance.setLanguage("new");
+                        phone = instance.doOCR(file);
+
+
+                        if (!StringUtils.isEmpty(phone)) {
+                            break;
+                        }
+
+
                     }
 
-                    instance.setDatapath(tessDataFolder.getAbsolutePath());
-                    instance.setLanguage("new");
-                    phone = instance.doOCR(file);
-                } else {
-                    log.e("img is zore , type = " + type + " ,  hurl  =  " + hurl, null);
+                    url = getPhoneUrl(hurl, type);
+
+                    if (!StringUtils.isEmpty(url))
+                        file = HttpUtils.download(url, hurl);
+
+                } catch (Exception e) {
+                    ex = e;
+                    phone = "";
                 }
+
+            }
+
+            phone = phone.trim().replaceAll("\\s*|\\t|\\r|\\n", "");
+
+            if (StringUtils.isEmpty(phone)) {
+                log.e("img is null , hurl =  " + hurl, ex);
+            }
+
+        }
+
+        return phone;
+    }
+
+    private String getPhoneUrl(String hurl, String type) {
+        String url = "";
+
+        final Request request = new Request.Builder()
+                .headers(HttpUtils.getCommonHeaders())
+                .header("Referer", BASE_URL)
+                .url(hurl)
+                .build();
+
+        HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
+
+        if (responseWrap.isSuccess()) {
+            try {
+
+                Document doc = Jsoup.parse(responseWrap.body, BASE_URL);
+
+                if (doc.select(".contact_body").size() > 0) {
+                    // 只有电话
+                    Elements elements = doc.select(".contact_body ul li");
+
+                    if (elements.size() > 0) {
+                        for (int i = 0; i < elements.size(); i++) {
+                            Element element = elements.get(i);
+
+                            String text = element.text().trim();
+
+                            text = text.replaceAll(Jsoup.parse("&nbsp;").text(), "").replaceAll("\\s+", "")
+                                    .replaceAll(Jsoup.parse("&#12288;").text(), "");
+
+                            if (text.indexOf("电话") > -1) {
+                                url = element.children().last().attr("src").trim();
+                            }
+
+                        }
+                    }
+
+                    return url;
+                }
+
+
+                Elements c = doc.select(".px13.lh18 table").get(0).select("tr");
+
+                for (int i = 0; i < c.size(); i++) {
+                    Element co = c.get(i);
+
+                    if (co.select("td").get(0).text().trim().startsWith("公司电话") && "电话".equals(type.trim())) {
+                        url = co.select("td").get(1).select("img").attr("src").trim();
+                    }
+
+                    if (co.select("td").get(0).text().startsWith("手机") && "手机".equals(type.trim())) {
+                        url = co.select("td").get(1).select("img").attr("src").trim();
+                    }
+                }
+                return url;
             } catch (Exception e) {
-                log.e(e.getMessage() + " , url  =  " + url + ", hurl ： " + hurl, e);
-                phone = "";
             }
         }
 
-        return phone.trim().replaceAll("\\s*|\\t|\\r|\\n", "");
+        return url;
     }
 
 }

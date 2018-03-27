@@ -16,7 +16,7 @@ public class EJLTester {
 //        service.requestCategory() ;
 
         ShiJieGCService service = new ShiJieGCService();
-        CompanyInfo companyInfo = service.getCompanyInfo("https://qiye.gongchang.com/zengjunwen/");
+        CompanyInfo companyInfo = service.getCompanyInfo("https://qiye.gongchang.com/shuizhijiance/");
         System.out.println(new Gson().toJson(companyInfo));
 
     }
