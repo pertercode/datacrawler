@@ -273,8 +273,8 @@ public class ShiJieGCService {
         if (page == null)
             page = 1;
 
-        String url = category.getC_url() + "/" + page;
-//        String url = "https://chanpin.gongchang.com/list/" + category.getC_id() + "/" + page + "/";
+//        String url = category.getC_url() + "/" + page;
+        String url = "https://chanpin.gongchang.com/list/" + category.getC_id() + "/" + page + "/";
         Integer totalPage = null;
         final Request request = new Request.Builder().headers(HttpUtils.getCommonHeaders()).header("Referer", BASE_URL).url(url).build();
         HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
