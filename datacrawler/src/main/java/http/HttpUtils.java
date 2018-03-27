@@ -1,6 +1,8 @@
 package http;
 
+import main.App;
 import okhttp3.*;
+import utils.IDUtils;
 
 import java.io.*;
 import java.net.*;
@@ -86,8 +88,13 @@ public class HttpUtils {
     }
 
 
-    public static synchronized InputStream download(String urlStr, String referer) {
-        InputStream is = null;
+    public static synchronized File download(String urlStr, String referer) {
+
+        File file = null;
+
+        File dir = new File(App.BASE_PATH, "img_cache");
+        dir.mkdirs();
+
         try {
             URL url = new URL(urlStr);
 
@@ -99,12 +106,27 @@ public class HttpUtils {
             httpURLConnection.addRequestProperty("referer", referer);
             httpURLConnection.addRequestProperty("user-agent", HttpHeaderUtils.getNextUserAgent());
             httpURLConnection.connect();
-            is = httpURLConnection.getInputStream();
+            InputStream is = httpURLConnection.getInputStream();
+
+            String fileName = "phone.png";
+
+            file = new File(dir, fileName);
+
+            FileOutputStream fos = new FileOutputStream(file);
+
+            byte[] b = new byte[1024];
+            int len = 0;
+            while ((len = is.read(b)) != -1) {  //先读到内存
+                fos.write(b, 0, len);
+            }
+            fos.flush();
+            fos.close();
+            is.close();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return is;
+        return file;
     }
 
 

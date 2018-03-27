@@ -19,6 +19,8 @@ public interface BaseMapper {
 
     Category categorySelect(@Param("cname") String cname);
 
+    List<Category> categorySelectList(@Param("platform") String platform, @Param("is_low") Integer is_low);
+
     ////// 企业
     //int companyExists() ;
 

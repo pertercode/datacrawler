@@ -1,6 +1,7 @@
 package dao;
 
 import bean.*;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.log4j.Logger;
 
@@ -118,6 +119,24 @@ public class BaseDao {
             MyBatisUtils.closeSession(sqlSession);
         }
         return category;
+    }
+
+
+    public List<Category> categorySelectList(String platform, Integer is_low) {
+        SqlSession sqlSession = null;
+        List<Category> categoryList = null;
+        try {
+            sqlSession = MyBatisUtils.openSession(false);
+            BaseMapper mapper = sqlSession.getMapper(BaseMapper.class);
+            categoryList = mapper.categorySelectList(platform, is_low);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e.getMessage(), e);
+            throw e;
+        } finally {
+            MyBatisUtils.closeSession(sqlSession);
+        }
+        return categoryList;
     }
 
 

@@ -38,9 +38,19 @@
     <!--ORDER BY c_level DESC LIMIT 0 , 1-->
     <select id="categorySelect" resultMap="Category">
         SELECT * FROM `lz_crawler`.`crawler_category` WHERE c_name = #{cname}
+    </select>
 
+    <select id="categorySelectList" resultMap="Category">
+        SELECT * FROM `lz_crawler`.`crawler_category` WHERE  1 = 1 AND left(_id, length('${platform}') )='${platform}'
+        
+        <if test="is_low != null and is_low > -1">
+            AND c_islow = #{is_low}
+        </if>
 
     </select>
+
+
+
 
     <!--以平台字符串开头的，数据这个平台数据得最大页数-->
     <select id="produceMaxPage" parameterType="string" resultType="integer">

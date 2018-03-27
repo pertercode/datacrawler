@@ -33,6 +33,7 @@ public class ShiJieGCThread implements Runnable {
 
     public void crawler() {
         List<Category> categoryList = baseService.getlv1();
+//        List<Category> categoryList = baseDao.categorySelectList(ShiJieGCService.platform,1) ;
         dosearch(categoryList);
     }
 

@@ -274,6 +274,7 @@ public class ShiJieGCService {
             page = 1;
 
         String url = category.getC_url() + "/" + page;
+//        String url = "https://chanpin.gongchang.com/list/" + category.getC_id() + "/" + page + "/";
         Integer totalPage = null;
         final Request request = new Request.Builder().headers(HttpUtils.getCommonHeaders()).header("Referer", BASE_URL).url(url).build();
         HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
@@ -341,12 +342,15 @@ public class ShiJieGCService {
      */
     public CompanyInfo getCompanyInfo(String url) {
         CompanyInfo companyInfo = null;
+
         String destUrl = url + "contact/";
+
         final Request request = new Request.Builder()
                 .headers(HttpUtils.getCommonHeaders())
                 .header("Referer", BASE_URL)
                 .url(destUrl)
                 .build();
+
         HttpUtils.ResponseWrap responseWrap = HttpUtils.retryHttpNoProxy(request);
 
         int code = responseWrap.response.code();
@@ -367,7 +371,7 @@ public class ShiJieGCService {
                 if (_id.endsWith("/")) _id = _id.substring(0, _id.length() - 1);
 
                 if (doc.select(".contact_body").size() > 0) {
-                    return companyInfo1(doc, _id, url);
+                    return companyInfo1(doc, _id, destUrl);
                 }
 
                 if (doc.select(".met-editor.lazyload").size() > 0) {
@@ -383,9 +387,36 @@ public class ShiJieGCService {
                 String cPhone = "";
                 String qq = "";
                 String local = "";
+
+//                String mobileTmp = "";
+//
+//                String phoneTemp = "";
+
+//                Elements spans = doc.select(".ft_dz span");
+//
+//                for (int i = 0; i < spans.size(); i++) {
+//                    Element span = spans.get(i);
+//                    String text = span.text().trim();
+//
+//                    if (text.indexOf("手机") > -1) {
+//                        phoneTemp = text.split("：")[1].trim();
+//                    }
+//
+//                    if (text.indexOf("电话") > -1) {
+//                        mobileTmp = text.split("：")[1].trim();
+//                    }
+//                }
+//
+//
+//                String phoneTempBack = phoneTemp;
+//                if (phoneTemp.length() < 8) phoneTemp = "";
+//
+//                String mobileTempBack = mobileTmp;
+//                if (mobileTmp.length() < 7) mobileTmp = "";
+
+
                 for (int i = 0; i < c.size(); i++) {
                     Element co = c.get(i);
-
 
                     if (co.select("td").get(0).text().trim().startsWith("所在地区"))
                         local = co.select("td").get(1).text().trim();
@@ -397,14 +428,30 @@ public class ShiJieGCService {
                         cAddress = co.select("td").get(1).text().trim();
                     if (co.select("td").get(0).text().trim().startsWith("公司电话")) {
                         String murl = co.select("td").get(1).select("img").attr("src").trim();
-                        mobile = searchPhone(murl, url);
+
+                        mobile = searchPhone(murl, destUrl, "电话");
+
+//                        if (StringUtils.isEmpty(mobile) && !StringUtils.isEmpty(mobileTmp)) {
+//                            log.e("\n  mobileTmp =  " + mobileTempBack + ". \n img src = " + murl + " . \n comp_url = " + destUrl + " .   \n", null);
+//                        }
+
+
                     }
                     if (co.select("td").get(0).text().trim().startsWith("联 系 人"))
                         cContactName = co.select("td").get(1).text().trim();
+
+
                     if (co.select("td").get(0).text().startsWith("手机")) {
                         String purl = co.select("td").get(1).select("img").attr("src").trim();
-                        cPhone = searchPhone(purl, url);
+                        cPhone = searchPhone(purl, destUrl, "手机");
+
+//
+//                        if (StringUtils.isEmpty(cPhone) && !StringUtils.isEmpty(phoneTemp)) {
+//                            log.e("\n  phoneTemp =  " + phoneTempBack + ". \n img src = " + purl + " . \n comp_url = " + destUrl + " .   \n", null);
+//                        }
                     }
+
+
                     if (co.select("td").get(0).text().trim().startsWith("即时通讯") && co.select("td").get(1).select("a").size() == 2)
                         qq = co.select("td").get(1).select("a").get(1).attr("href").split("&")[1].split("=")[1];
 
@@ -472,7 +519,7 @@ public class ShiJieGCService {
 
                     if (text.indexOf("电话") > -1) {
                         String phoneUrl = element.children().last().attr("src").trim();
-                        cPhone = searchPhone(phoneUrl, hurl);
+                        cPhone = searchPhone(phoneUrl, hurl, "电话");
                     }
 
                     if (text.indexOf("所在地") > -1) {
@@ -553,36 +600,24 @@ public class ShiJieGCService {
     }
 
 
-    public BufferedImage download(String url, String hurl) throws Exception {
-        BufferedImage bd = null;
+    public File download(String url, String hurl) throws Exception {
         for (int i = 0; i < 2; i++) {
             //发送请求
-            InputStream is = HttpUtils.download(url, hurl);
-
-            bd = ImageIO.read(is);
-
-            is.close();
-
-            if (bd != null) {
-                return bd;
-            }
-            Thread.sleep(1000);
+            File file = HttpUtils.download(url, hurl);
+            if (file != null && file.length() > 1) return file;
         }
-        return bd;
+        return null;
     }
 
     /**
      * 查询电话
      */
-    public String searchPhone(String url, String hurl) {
+    public String searchPhone(String url, String hurl, String type) {
         String phone = "";
-
         if (!StringUtils.isEmpty(url) && !StringUtils.isEmpty(hurl)) {
             try {
-
-                BufferedImage bd = download(url, hurl);
-
-                if (bd != null) {
+                File file = download(url, hurl);
+                if (file != null && file.length() > 1) {
                     ITesseract instance = new Tesseract();  // JNA Interface Mapping
 
                     File tessDataFolder = new File("C:\\tessdata");
@@ -593,9 +628,9 @@ public class ShiJieGCService {
 
                     instance.setDatapath(tessDataFolder.getAbsolutePath());
                     instance.setLanguage("new");
-                    phone = instance.doOCR(bd);
+                    phone = instance.doOCR(file);
                 } else {
-                    log.e("图片 is null , " + url + ", \n from url  ： " + hurl, null);
+                    log.e("img is zore , type = " + type + " ,  hurl  =  " + hurl, null);
                 }
             } catch (Exception e) {
                 log.e(e.getMessage() + " , url  =  " + url + ", hurl ： " + hurl, e);
